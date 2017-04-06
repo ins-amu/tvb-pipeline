@@ -4,9 +4,16 @@ import os
 import sys
 import argparse
 import logging
+import multiprocessing
 import nibabel as nb
 import numpy as np
 import scipy.ndimage
+
+
+def vol_val_xyz(vol, aff, val):
+    vox_idx = np.argwhere(vol == val)
+    xyz = aff.dot(np.c_[vox_idx, np.ones(vox_idx.shape[0])].T)[:3].T
+    return xyz
 
 
 def compute_label_volume_centers(label_volume, affine=None):
@@ -17,8 +24,7 @@ def compute_label_volume_centers(label_volume, affine=None):
         vol = label_volume
         aff = affine
     for val in np.unique(vol):
-        vox_idx = np.argwhere(vol == val)
-        xyz = aff.dot(np.c_[vox_idx, np.ones(vox_idx.shape[0])].T)[:3].T
+        xyz = vol_val_xyz(vol, aff, val)
         x, y, z = xyz.mean(axis=0)
         yield val, (x, y, z)
     
@@ -142,6 +148,37 @@ def seeg_gain(seeg_xyz_fname, aa_xyz_fname, gain_mat_fname):
     r = np.sqrt((dx**2).sum(axis=-1))  # (n, m)
     gain = 1.0 / r
     np.savetxt(gain_mat_fname, gain)
+
+
+def _label_objects_one(args):
+    uv, labels, affine = args
+    if uv == 0:
+        return None
+    xyz = vol_val_xyz(labels, affine, uv)
+    if len(xyz) < 3:
+        return None
+    u, s, vt = np.linalg.svd(xyz, full_matrices=False)
+    p1 = (u[:, 0] * s[0]).ptp()
+    return s[0], uv, s, p1
+
+
+def label_objects(masked_fname, labeled_fname, *args):
+    nii = nb.load(masked_fname)
+    labels, _ = scipy.ndimage.label(nii.get_data())
+    log = logging.getLogger('label_objects')
+    label_pcs = []
+    uvs = np.unique(labels.reshape((-1, )))
+    args = [(uv, labels, nii.affine) for uv in uvs]
+    nthread = int(args[0]) if args else 8
+    pool = multiprocessing.Pool(nthread)
+    label_pcs = [r for r in pool.map(_label_objects_one, args) if r]
+    label_map = np.zeros(5000)
+    for i, (s0, uv, s, p1) in enumerate(sorted(label_pcs, key=lambda t: t[3])):
+        label_map[uv] = i
+        print(i, uv, s0, p1)
+    labels = label_map[labels]
+    nii_out = nb.nifti1.Nifti1Image(labels, nii.affine)
+    nb.save(nii_out, labeled_fname)
 
 
 if __name__ == '__main__':
