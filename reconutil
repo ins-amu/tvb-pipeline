@@ -1,0 +1,154 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import argparse
+import logging
+import nibabel as nb
+import numpy as np
+import scipy.ndimage
+
+
+def compute_label_volume_centers(label_volume, affine=None):
+    try:
+        vol = label_volume.get_data()
+        aff = label_volume.affine
+    except:
+        vol = label_volume
+        aff = affine
+    for val in np.unique(vol):
+        vox_idx = np.argwhere(vol == val)
+        xyz = aff.dot(np.c_[vox_idx, np.ones(vox_idx.shape[0])].T)[:3].T
+        x, y, z = xyz.mean(axis=0)
+        yield val, (x, y, z)
+    
+
+def build_fs_label_name_map(lut_path):
+    lut = {}
+    with open(lut_path, 'r') as fd:
+        for line in fd.readlines():
+            if not line[0] == '#' and line.strip():
+                val, name, _, _, _, _ = line.strip().split()
+                lut[int(val)] = name
+    return lut
+
+
+def label_volume_centers(label_volume, output_tsv):
+    log = logging.getLogger('label_volume_centers')
+    
+    log.info('reading %r', label_volume)
+    vol = nb.load(label_volume)
+    
+    log.info('computing centers')
+    centers = list(compute_label_volume_centers(vol))
+    
+    log.info('loading FS LUT')
+    lut_path = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
+    lut_map = build_fs_label_name_map(lut_path)
+    
+    log.info('writing results to %r', output_tsv)
+    with open(output_tsv, 'w') as fd:
+        for val, (x, y, z) in centers:
+            val_ = lut_map[val] if lut_map else val
+            fd.write('%f\t%f\t%f\t%s\n' % (x, y, z, val_))
+
+
+def label_with_dilation(masked_CT_fname, dilated_CT_fname, label_CT_fname):
+    log = logging.getLogger('label_with_dilation')
+    log.info('reading mask %r', masked_CT_fname)
+    mask = nb.load(masked_CT_fname)
+    mask_data = mask.get_data()
+    log.info('reading dilated mask %r', dilated_CT_fname)
+    dil_mask = nb.load(dilated_CT_fname)
+    dil_mask_data = dil_mask.get_data()
+    log.info('labeling dilated mask..')
+    lab, n = scipy.ndimage.label(dil_mask_data)
+    log.info('found %d objects', n)
+    lab_xyz = list(compute_label_volume_centers(lab, dil_mask.affine))
+    lab_sort = np.r_[:n+1]
+    # sort labels along AP axis
+    for i, (val, _) in enumerate(sorted(lab_xyz, key=lambda t: t[1][1])):
+        lab_sort[val] = i
+    lab = lab_sort[lab]
+    mask_data *= lab
+    log.info('saving labeled mask to %r', label_CT_fname)
+    label_CT = nb.nifti1.Nifti1Image(mask_data, mask.affine)
+    nb.save(label_CT, label_CT_fname)
+
+def periodic_xyz_for_object(lab, val, aff, bw=0.1, doplot=False):
+    "Find blob centers for object in lab volume having value val."
+    # TODO handle oblique with multiple spacing
+    # TODO we know its 3.5 mm...
+    # TODO constraints such as enough voxels, linear enough, etc
+    # vox coords onto first mode
+    log = logging.getLogger('periodic_xyz_for_object')
+    vox_idx = np.argwhere(lab == val)
+    xyz = aff.dot(np.c_[vox_idx, np.ones(vox_idx.shape[0])].T)[:3].T
+    xyz_mean = xyz.mean(axis=0)
+    xyz -= xyz_mean
+    u, s, vt = np.linalg.svd(xyz, 0)
+    xi = u[:, 0] * s[0]
+    # histogram and ft to find spacing and offset
+    bn, bxi_ = np.histogram(
+        xi, np.r_[min(xi) - 0.5: max(xi) + 0.5: bw])
+    bxi = bxi_[:-1] + bw / 2.0
+    w = np.r_[3.0: 4.5: 1000j]
+    f = (1.0 / w)[:, None]
+    Bf = (np.exp(-2 * np.pi * 1j * bxi * f) * bn * bw).sum(axis=-1)
+    i_peak = np.argmax(np.abs(Bf))
+    theta = np.angle(Bf[i_peak])
+    log.info('val=%d, dist=%f, theta=%f', val, 1 / f[i_peak][0], theta)
+    xi_o = -theta / (2 * np.pi * f[i_peak])
+    xi_pos = np.r_[xi_o: xi.max(): w[i_peak]]
+    xi_neg = np.r_[-xi_o: -xi.min(): w[i_peak]]
+    xi_pos = np.sort(np.r_[-xi_neg, xi_pos[1:]])
+    xyz_pos = np.c_[xi_pos, np.zeros(
+        (len(xi_pos), 2))].dot(vt) + xyz_mean
+    return xyz_pos
+
+
+def gen_seeg_xyz(labeled_CT_fname, schema_fname, seeg_xyz_fname):
+    label_to_name = {}
+    with open(schema_fname, "r") as fd:
+        for line in fd.readlines():
+            label_num, label_name = line.strip().split(' ')
+            label_num = int(label_num)
+            assert label_num not in label_to_name
+            label_to_name[int(label_num)] = label_name
+    nii = nb.load(labeled_CT_fname)
+    lab_bin = nii.get_data()
+    aff = nii.affine
+    ulab = np.unique(lab_bin)
+    ulab = ulab[ulab > 0]
+    # TODO find closest voxel in parcellation, provide name
+    fmt = '%s%d\t%f\t%f\t%f\n'
+    with open(seeg_xyz_fname, "w") as fd:
+        for ul in ulab[ulab > 0]:
+            if ul not in label_to_name:
+                print("skipping object label %d" % (ul, ))
+                continue
+            xyz_pos = periodic_xyz_for_object(lab_bin, ul, aff)
+            xyz_pos = xyz_pos[np.argsort(np.abs(xyz_pos[:, 0]))]
+            name = label_to_name[ul]
+            for i, (x, y, z) in enumerate(xyz_pos):
+                fd.write(fmt % (name, i, x, y, z))
+    
+
+def seeg_gain(seeg_xyz_fname, aa_xyz_fname, gain_mat_fname):
+    # NB this is only a pseudo gain matrix
+    seeg_xyz = np.loadtxt(seeg_xyz_fname, usecols=(1,2,3))  # (n, 3)
+    aa_xyz = np.loadtxt(aa_xyz_fname, usecols=(0,1,2))  # (m, 3)
+    dx = seeg_xyz[:, None] - aa_xyz  # (n, m, 3)
+    r = np.sqrt((dx**2).sum(axis=-1))  # (n, m)
+    gain = 1.0 / r
+    np.savetxt(gain_mat_fname, gain)
+
+
+if __name__ == '__main__':
+    import sys
+    loglevel = logging.INFO
+    if os.environ.get('VERBOSE', False):
+        loglevel = logging.DEBUG
+    logging.basicConfig(level=loglevel)
+    cmd = sys.argv[1]
+    eval(cmd)(*sys.argv[2:])
