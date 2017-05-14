@@ -169,7 +169,7 @@ def label_objects(masked_fname, labeled_fname, *args):
     label_pcs = []
     uvs = np.unique(labels.reshape((-1, )))
     args = [(uv, labels, nii.affine) for uv in uvs]
-    nthread = int(args[0]) if args else 8
+    nthread = 8
     pool = multiprocessing.Pool(nthread)
     label_pcs = [r for r in pool.map(_label_objects_one, args) if r]
     label_map = np.zeros(5000)

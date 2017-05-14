@@ -26,6 +26,7 @@ hemi = lh rh
 sd = $(SUBJECTS_DIR)/$(SUBJECT)
 rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/$(aa).mgz
+here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 .PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
 default:
@@ -34,6 +35,7 @@ fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
 resamp-anat: $(sd)/surf/lh.$(sval).$(resamp_target) $(sd)/surf/rh.$(sval).$(resamp_target)
 tck: $(sd)/dwi/all.tck
 conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
+labeled_elec: $(sd)/seeg/labeled_$(elec_mode).nii.gz
 seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain.mat
 
 mrinfo:
