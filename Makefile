@@ -33,7 +33,7 @@ default:
 	echo "please read Makefile to use correctly"
 fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
 resamp-anat: $(sd)/surf/lh.$(sval).$(resamp_target) $(sd)/surf/rh.$(sval).$(resamp_target)
-tck: $(sd)/dwi/all.tck
+tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
 labeled_elec: $(sd)/seeg/labeled_$(elec_mode).nii.gz
 seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain.mat
@@ -120,6 +120,9 @@ $(sd)/dwi/mask.mif: $(sd)/dwi/preproc.mif
 
 $(sd)/dwi/fod.mif: $(sd)/dwi/preproc.mif $(sd)/dwi/response.txt
 	dwi2fod csd $^ $@ -force -nthreads $(nthread)
+
+$(sd)/dwi/100k.tck: $(sd)/dwi/all.tck
+	tckedit -number 100K $< $@
 
 $(sd)/dwi/all.tck: $(sd)/dwi/fod.mif $(sd)/dwi/mask.mif
 	tckgen $< $@ \
