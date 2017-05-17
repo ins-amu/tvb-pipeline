@@ -11,3 +11,5 @@ source /soft/gcc492/activate
 export MRT3=/soft/mrtrix3-0.3.15
 export PATH=$PATH:$MRT3/release/bin:$MRT3/scripts:$FSLDIR/bin:$FSLDIR/scripts
 export LD_LIBRARY_PATH=/soft/fsl/lib:$LD_LIBRARY_PATH
+
+source /soft/dcmtk360/activate
