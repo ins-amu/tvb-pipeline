@@ -122,7 +122,11 @@ $(sd)/dwi/aparc_aseg.nii.gz: $(sd)/dwi/t2d.mat $(sd)/mri/$(aa).RAS.RO.nii.gz
 # 001.mgz: wait for subject folder to exist before proceeding
 $(sd)/dwi/raw.mif: $(DWI) $(sd)/mri/orig/001.mgz
 	mkdir -p $(sd)/dwi
+ifneq ($(and $(BVECS),$(BVALS)),)
+	mrconvert -fslgrad $(BVECS) $(BVALS) -force $< $@
+else
 	mrconvert -force $< $@
+endif
 
 $(sd)/dwi/preproc.mif: $(sd)/dwi/raw.mif
 	# dwipreproc -force -rpe_none $(pe_dir) $< $@
