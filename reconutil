@@ -181,6 +181,14 @@ def label_objects(masked_fname, labeled_fname, *args):
     nb.save(nii_out, labeled_fname)
 
 
+def postprocess_connectome(in_mat_fname, out_mat_fname, *args):
+    from numpy import loadtxt, fill_diagonal, savetxt
+    mat = loadtxt(in_mat_fname)
+    mat += mat.T
+    fill_diagonal(mat, 0.0)
+    savetxt(out_mat_fname, mat)
+
+
 if __name__ == '__main__':
     import sys
     loglevel = logging.INFO

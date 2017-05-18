@@ -143,11 +143,14 @@ $(sd)/dwi/label.mif: $(sd)/dwi/aparc_aseg.nii.gz
 	    $(MRT3)/src/connectome/tables/fs_default.txt \
 	    $@ -force
 
-$(sd)/dwi/counts.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
+$(sd)/dwi/triu_counts.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
 	tck2connectome $^ $@ -force -nthreads $(nthread)
 
-$(sd)/dwi/lengths.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
+$(sd)/dwi/triu_lengths.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
 	tck2connectome $^ $@ -scale_length -stat_edge mean -force -nthreads $(nthread)
+
+$(sd)/dwi/%.txt: $(sd)/dwi/triu_%.txt
+	./reconutil postprocess_connectome $< $@
 
 # }}}
 
