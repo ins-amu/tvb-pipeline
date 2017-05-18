@@ -1,34 +1,18 @@
-# README
+# recon make
 
-This is a Makefile for building brain models for TVB.
+This is a simplified pipeline using just make and a single Python module
+for custom image processing algorithms.
 
-Essential variables can be provided by environment variables or
-arguments to `make`:
+Usage:
 
 ```bash
 source activate
-make SUBJECT=cj elec_mode=CT
+
+# make freesurfer recon, tractography and connectome
+make SUBJECT=ac-p15 T1=data/t1/epi2009/ac-p15 DWI=data/dti/epi2009/ac-p15 fs-recon resamp-anat tck conn
+
+# reconstruct electrodes
+make SUBJECT=ac-p15 ELEC=data/ct/ac-p15.nii.gz elec_mode=ELEC labeled_elec
 ```
-assuming you put data in `data/cj/T1.nii.gz`, `data/cj/DWI.mif`, etc. Otherwise specify
-```
-make ... CT=/path/to/CT.mgz
-```
 
-*Required*
-
-- Python w/ NumPy, SciPy, NiBabel
-- FreeSurfer 6
-- FSL
-- MRtrix3 (>= v0.3.15)
-
-*providing an sEEG schema*
-
-I was labeling the image, and then the schema would map
-label values to names, but, better:
-
-Provide a file with xyz locations in the original electrode
-image (CT or T1) and electrode names.  Once the labeled
-elec image is ready, xyz locs are mapped to nearest object
-and corresponding name used to generate contact names.
-Optionally with number to know how many contacts to generate.
-
+For rationale for using `make`, cf http://zmjones.com/make/
