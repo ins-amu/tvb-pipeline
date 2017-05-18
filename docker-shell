@@ -1,6 +1,8 @@
 #!/bin/bash
 
 workdir=/opt/work
-tag=ubuntu
+tag=maedoc/recon
 
-docker run --rm -it -v $(pwd):$workdir -w $workdir tag sh -c "$@"
+mkdir -p fs
+
+docker run --rm -it -v $(pwd):$workdir -e SUBJECTS_DIR=$workdir/fs -w $workdir $tag sh -c "$@"
