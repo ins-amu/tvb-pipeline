@@ -1,4 +1,4 @@
-#recon make
+# tvb-make
 
 This is a Makefile and supporting Python module for preprocessing structural data
 for TVB brain models. The dataflow implemented can be seen in the following diagram:
