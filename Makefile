@@ -193,7 +193,7 @@ $(sd)/seeg/masked_ELEC.nii.gz: $(sd)/seeg/ELEC_in_T1.nii.gz $(sd)/seeg/mask.nii.
 $(sd)/seeg/labeled_ELEC.nii.gz: $(sd)/seeg/masked_ELEC.nii.gz
 	./reconutil label_objects $< $@ $(nthread)
 
-# user must create schema.txt
+# user must label electrodes by hand at some point
 $(sd)/seeg/seeg.xyz: $(sd)/seeg/labeled_$(elec_mode).nii.gz $(sd)/seeg/schema.txt
 	./reconutil gen_seeg_xyz $^ $@
 
