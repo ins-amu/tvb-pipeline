@@ -10,6 +10,7 @@
 # TODO work with / inside of docker image
 # }}}
 
+# default parameters {{{
 sval ?= pial
 pe_dir ?= AP
 regopts ?= -cost mutualinfo -dof 12 -searchrz -180 180 -searchry -180 180  -searchrx -180 180 
@@ -20,6 +21,7 @@ parc ?= aparc.a2009s
 aa ?= aparc+aseg
 resamp_target ?= fsaverage5
 elec_mode ?= CT
+# }}}
 
 # default data layout {{{
 data ?= data
@@ -223,3 +225,6 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 	cd $<; for img in *; do dcmdjpeg $$img ../$*.dcmdjpeg.dir/$$img; done
 
 # }}}
+
+
+# vim: foldmethod=marker
