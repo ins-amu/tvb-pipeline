@@ -214,4 +214,9 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 
 %.mif: %.nii.gz
 	mrconvert -force $< $@
+
+%.dcmdjpeg.dir: %
+	mkdir -p $@
+	cd $<; for img in *; do dcmdjpeg $$img ../$*.dcmdjpeg.dir/$$img; done
+
 # }}}
