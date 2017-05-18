@@ -1,7 +1,8 @@
 # Issue tracker ;) {{{ 
-# TODO add all the stuff presented during node5 workshop (bem, gain, etc)
+# TODO new idea for seeg implantation
 # TODO bvecs bvals
 # TODO redirect dwi & seeg to separate log files
+# TODO add all the stuff presented during node5 workshop (bem, gain, etc)
 # TODO redo repo and make public?
 # TODO work with / inside of docker image
 # TODO use include $(var) to split up
