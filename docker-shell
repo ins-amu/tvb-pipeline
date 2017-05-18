@@ -1,0 +1,6 @@
+#!/bin/bash
+
+workdir=/opt/work
+tag=ubuntu
+
+docker run --rm -it -v $(pwd):$workdir -w $workdir tag sh -c "$@"
