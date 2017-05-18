@@ -1,7 +1,9 @@
 #recon make
 
 This is a Makefile and supporting Python module for preprocessing structural data
-for TVB brain models.
+for TVB brain models. The dataflow implemented can be seen in the following diagram:
+
+![dag](dag.png)
 
 ## Usage
 
@@ -20,7 +22,7 @@ The `run-one.sh` script can be used with OAR to run many jobs, e.g.
 oarsub -l nodes=1,walltime=24:00:00 --array-param-file params.txt ./run-one.sh
 ```
 
-## Requirements
+## Dependencies
 
 - Python w/ NumPy, SciPy, NiBabel
 - FreeSurfer 6

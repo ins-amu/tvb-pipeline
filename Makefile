@@ -56,6 +56,9 @@ clean:
 nothing:
 	echo "doing nothing for subject $(SUBJECT) per request"
 
+dag.png: Makefile params.txt
+	make -Bnd $$(head -n1 params.txt) | make2graph | dot -Tpng -o dag.png
+
 # }}}
 
 # FreeSurfer reconstruction & downsampling# {{{
