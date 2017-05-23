@@ -1,5 +1,6 @@
 # Issue tracker ;) {{{ 
-# TODO new idea for seeg implantation
+# TODO seeg implantation spec by just start & end
+# TODO include subject config & targets
 # TODO bvecs bvals
 # TODO redirect dwi & seeg to separate log files
 # TODO add all the stuff presented during node5 workshop (bem, gain, etc)
