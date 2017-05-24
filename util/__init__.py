@@ -5,6 +5,7 @@ import sys
 import argparse
 import logging
 import multiprocessing
+import subprocess
 import nibabel as nb
 import numpy as np
 import scipy.ndimage
@@ -138,7 +139,60 @@ def gen_seeg_xyz(labeled_CT_fname, schema_fname, seeg_xyz_fname):
             name = label_to_name[ul]
             for i, (x, y, z) in enumerate(xyz_pos):
                 fd.write(fmt % (name, i, x, y, z))
-    
+
+
+def gen_contacts_on_electrode(name, target, entry, ncontacts):
+    CONTACT_DIST = 3.5 # Distance between two contacts on the same electrode
+
+    orientation = entry - target
+    orientation /= np.linalg.norm(orientation)
+
+    contacts = []
+    for i in range(ncontacts):
+        contact_name = name + str(i+1)
+        position = target + i*CONTACT_DIST*orientation
+        contacts.append((contact_name, position))
+
+    return contacts
+
+def transform(coords, src_img, dest_img, transform_mat):
+    coords_str = " ".join([str(x) for x in coords])
+
+    cp = subprocess.run("echo %s | img2imgcoord -mm -src %s -dest %s -xfm %s" \
+                            % (coords_str, src_img, dest_img, transform_mat),
+                        shell=True, stdout=subprocess.PIPE)
+    transformed_coords_str = cp.stdout.decode('ascii').strip().split('\n')[-1]
+    return np.array([float(x) for x in transformed_coords_str.split(" ") if x])
+
+
+def gen_contacts_from_endpoints(scheme_fname, out_fname, transform_mat=None,
+                                src_img=None, dest_img=None):
+
+    infile = open(scheme_fname, "r")
+    outfile = open(out_fname, "w")
+
+    for line in infile:
+        line.strip()
+        if line[0] == '#':
+            continue
+
+        name, tgx, tgy, tgz, enx, eny, enz, ncontacts = line.split()
+        target = np.array([float(x) for x in [tgx, tgy, tgz]])
+        entry  = np.array([float(x) for x in [enx, eny, enz]])
+        ncontacts = int(ncontacts)
+
+        if transform_mat is not None:
+            assert src_img is not None and dest_img is not None
+            target = transform(target, src_img, dest_img, transform_mat)
+            entry = transform(entry, src_img, dest_img, transform_mat)
+
+        contacts = gen_contacts_on_electrode(name, target, entry, ncontacts)
+
+        for contact_name, pos in contacts:
+            outfile.write("%-6s %7.2f %7.2f %7.2f\n" % (contact_name, pos[0], pos[1], pos[2]))
+
+    infile.close()
+    outfile.close()
 
 def seeg_gain(seeg_xyz_fname, aa_xyz_fname, gain_mat_fname):
     # NB this is only a pseudo gain matrix
