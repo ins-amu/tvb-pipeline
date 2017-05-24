@@ -33,6 +33,9 @@ ifneq ($(and $(BVECS),$(BVALS)),)
 endif
 # }}}
 
+lut_fs = $(FREESURFER_HOME)/FreeSurferColorLUT.txt
+lut_mrt3_fs = $(MRT3)/src/connectome/tables/fs_default.txt
+
 .PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
 default:
 	echo "please read Makefile to use correctly"
@@ -42,6 +45,7 @@ tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
 labeled_elec: $(sd)/seeg/labeled_$(elec_mode).nii.gz
 seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain.mat
+tvb: $(sd)/tvb/connectivity.zip
 
 mrinfo:
 	echo $(SUBJECT)
@@ -144,8 +148,8 @@ $(sd)/dwi/all.tck: $(sd)/dwi/fod.mif $(sd)/dwi/mask.mif
 
 $(sd)/dwi/label.mif: $(sd)/dwi/aparc_aseg.nii.gz
 	labelconvert $< \
-	    $(FREESURFER_HOME)/FreeSurferColorLUT.txt \
-	    $(MRT3)/src/connectome/tables/fs_default.txt \
+	    $(lut_fs) \
+	    $(lut_mrt3_fs) \
 	    $@ -force
 
 $(sd)/dwi/triu_counts.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
@@ -236,5 +240,23 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 	mrconvert -fslgrad $</bvecs.txt $</bvals.txt $*.nii.gz $@
 
 # }}}
+
+# TVB compatible files {{{
+$(sd)/tvb: $(sd)/mri/orig/001.mgz
+	mkdir -p $(sd)/tvb
+
+$(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_lengths.txt $(sd)/tvb
+	./aseg2srf -s $(SUBJECT)
+	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
+	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc
+	./create_tvb_dataset.py $(sd) \
+	    $(lut_fs) $(lut_mrt3_fs) \
+	    $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_counts.txt \
+	    $(sd)/tvb/connectivity.zip $(sd)/tvb
+# }}}
+
+
+
+
 
 # vim: foldmethod=marker
