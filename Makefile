@@ -205,6 +205,7 @@ $(sd)/seeg/labeled_ELEC.nii.gz: $(sd)/seeg/masked_ELEC.nii.gz
 $(sd)/seeg/seeg.xyz: $(sd)/seeg/labeled_$(elec_mode).nii.gz $(sd)/seeg/schema.txt
 	python -m util gen_seeg_xyz $^ $@
 
+# more reliable to mark endpoints
 $(sd)/seeg/seeg.xyz: $(sd)/seeg/schema_endpoints.txt $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
 	python -m util gen_seeg_xyz_from_endpoints $< $@ $(sd)/seeg/$(elec_mode)_to_T1.mat \
 	    $(sd)/seeg/$(elec_mode).nii.gz $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
