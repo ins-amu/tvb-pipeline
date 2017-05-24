@@ -165,7 +165,7 @@ def transform(coords, src_img, dest_img, transform_mat):
     return np.array([float(x) for x in transformed_coords_str.split(" ") if x])
 
 
-def gen_contacts_from_endpoints(scheme_fname, out_fname, transform_mat=None,
+def gen_seeg_xyz_from_endpoints(scheme_fname, out_fname, transform_mat=None,
                                 src_img=None, dest_img=None):
 
     infile = open(scheme_fname, "r")
