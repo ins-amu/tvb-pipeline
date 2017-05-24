@@ -11,6 +11,7 @@
 # TODO use an isrunning file to avoid running dwi twice simultaneously
 # TODO 2d parsweep simple stability subcort & cortical coupling scaling to recalibrate matrix
 # TODO target OAR directly, stdout/stderr to subject directories
+# TODO resamp inflated surfaces for visualization
 # }}}
 
 # default parameters {{{
