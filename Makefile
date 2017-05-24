@@ -99,6 +99,9 @@ $(sd)/surf/%.$(sval).$(resamp_target): $(rtd) $(fs_done)
 $(sd)/mri/$(aa).xyz: $(fs_done)
 	python -m util label_volume_centers $(sd)/mri/$(aa).mgz $@
 
+$(sd)/aseg2srf: $(fs_done)
+	./aseg2srf -s $(SUBJECT)
+
 # }}}
 
 # Diffusion processing# {{{
@@ -245,8 +248,7 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 $(sd)/tvb: $(sd)/mri/orig/001.mgz
 	mkdir -p $(sd)/tvb
 
-$(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_lengths.txt $(sd)/tvb
-	./aseg2srf -s $(SUBJECT)
+$(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_lengths.txt $(sd)/tvb $(sd)/aseg2srf
 	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
 	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc
 	./create_tvb_dataset.py $(sd) \
@@ -254,9 +256,5 @@ $(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu
 	    $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_counts.txt \
 	    $(sd)/tvb/connectivity.zip $(sd)/tvb
 # }}}
-
-
-
-
 
 # vim: foldmethod=marker

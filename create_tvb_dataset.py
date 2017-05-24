@@ -584,7 +584,7 @@ def main():
     create_tvb_dataset(
         os.path.join(subject_dir, "surf"),
         os.path.join(subject_dir, "label"),
-        os.path.join(subject_dir, "ascii"),
+        os.path.join(subject_dir, "aseg2srf"),
         source_lut,
         target_lut,
         weights_file,
