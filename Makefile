@@ -41,7 +41,13 @@ rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/$(aa).mgz
 here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-.PHONY: fs-recon resamp-anat dwi seeg clean mrinfo docker # {{{
+# bvecs / bvals {{{
+ifneq ($(and $(BVECS),$(BVALS)),)
+    raw_mif_convert_flags := -fslgrad $(BVECS) $(BVALS)
+endif
+# }}}
+
+.PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
 default:
 	echo "please read Makefile to use correctly"
 fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
@@ -122,14 +128,11 @@ $(sd)/dwi/aparc_aseg.nii.gz: $(sd)/dwi/t2d.mat $(sd)/mri/$(aa).RAS.RO.nii.gz
 # 001.mgz: wait for subject folder to exist before proceeding
 $(sd)/dwi/raw.mif: $(DWI) $(sd)/mri/orig/001.mgz
 	mkdir -p $(sd)/dwi
-ifneq ($(and $(BVECS),$(BVALS)),)
-	mrconvert -fslgrad $(BVECS) $(BVALS) -force $< $@
-else
-	mrconvert -force $< $@
-endif
+	mrconvert $(raw_mif_convert_flags) -force $< $@
 
 $(sd)/dwi/preproc.mif: $(sd)/dwi/raw.mif
 	# dwipreproc -force -rpe_none $(pe_dir) $< $@
+	# TODO reconutil func to invoke dwipreproc correctly
 	cp $< $@
 
 $(sd)/dwi/bzero.mif: $(sd)/dwi/preproc.mif
@@ -218,7 +221,7 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 
 # }}}
 
-# Conversion rules# {{{
+# Conversion rules {{{
 %.RAS.nii.gz: %.mgz
 	mri_convert -rt nearest --out_orientation RAS $< $@
 
@@ -231,6 +234,7 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 %.mif: %.nii.gz
 	mrconvert -force $< $@
 
+# e.g. make T1=/foo/bar.dcmdjpeg.dir ...
 %.dcmdjpeg.dir: %
 	mkdir -p $@
 	cd $<; for img in *; do dcmdjpeg $$img ../$*.dcmdjpeg.dir/$$img; done
