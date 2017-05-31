@@ -1,8 +1,0 @@
-#!/bin/bash
-
-workdir=/opt/work
-tag=maedoc/recon
-
-mkdir -p fs
-
-docker run --rm -it -v $(pwd):$workdir -e SUBJECTS_DIR=$workdir/fs -w $workdir $tag sh -c "$@"
