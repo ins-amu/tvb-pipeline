@@ -41,7 +41,7 @@ rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/$(aa).mgz
 here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-.PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
+.PHONY: fs-recon resamp-anat dwi seeg clean mrinfo docker # {{{
 default:
 	echo "please read Makefile to use correctly"
 fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
@@ -64,6 +64,9 @@ nothing:
 
 dag.png: Makefile params.txt
 	make -Bnd $$(head -n1 params.txt) | make2graph | dot -Tpng -o dag.png
+
+docker:
+	sudo docker build -t maedoc/tvb-make .
 
 # }}}
 
