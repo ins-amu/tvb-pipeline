@@ -9,19 +9,20 @@ WORKDIR /opt
 # system packages {{{
 RUN apt-get update && apt-get install -y wget \
   && wget -O- http://neuro.debian.net/lists/xenial.de-m.full | tee /etc/apt/sources.list.d/neurodebian.sources.list \
-  && apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9 \
   && apt-get update \
-  && apt-get install -y g++ libeigen3-dev git python python-numpy zlib1g-dev \
-	cmake tcsh libeigen3-dev liblapack-dev libblas-dev libssl-dev fsl-complete \
-        libhdf5-dev zlib1g-dev libmatio-dev libopenblas-dev liblapacke-dev
+  && apt-get install -y --allow-unauthenticated g++ libeigen3-dev git python \
+      python-numpy zlib1g-dev cmake tcsh libeigen3-dev liblapack-dev libblas-dev \
+      libssl-dev fsl-complete libhdf5-dev zlib1g-dev libmatio-dev libopenblas-dev \
+      liblapacke-dev
 # }}}
 
-# external packages
+# external packages {{{
 ADD MNE*.tar.gz /opt/
 ADD freesurfer*.tar.gz /opt/
 ADD license.txt /opt/freesurfer/license.txt
 ADD dcmtk*.tar.bz2 /opt
 RUN mv dcmtk* dcmtk
+# }}}
 
 # FS, FSL, MNE env vars {{{
 ENV FIX_VERTEX_AREA= \
