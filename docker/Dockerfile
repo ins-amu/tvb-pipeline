@@ -96,3 +96,9 @@ ENV PYTHONPATH=/opt/tvb-library:/opt/tvb-data:$PYTHONPATH
 EXPOSE 8888
 EXPOSE 8000
 # }}}
+
+# Makefile as entry point {{{
+RUN git clone https://github.com/maedoc/tvb-make
+WORKDIR /opt/tvb-make
+ENTRYPOINT ["make"]
+# }}}
