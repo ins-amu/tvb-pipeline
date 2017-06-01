@@ -1,19 +1,3 @@
-# Issue tracker ;) {{{ 
-# TODO seeg implantation spec by just start & end
-# TODO include subject config & targets
-# TODO bvecs bvals
-# TODO redirect dwi & seeg to separate log files
-# TODO add all the stuff presented during node5 workshop (bem, gain, etc)
-# TODO redo repo and make public?
-# TODO work with / inside of docker image
-# TODO use include $(var) to split up
-# TODO move activate here
-# TODO use an isrunning file to avoid running dwi twice simultaneously
-# TODO 2d parsweep simple stability subcort & cortical coupling scaling to recalibrate matrix
-# TODO target OAR directly, stdout/stderr to subject directories
-# TODO resamp inflated surfaces for visualization
-# }}}
-
 # default parameters {{{
 sval ?= pial
 pe_dir ?= AP
@@ -35,11 +19,13 @@ CT ?= $(data)/$(SUBJECT)/CT.nii.gz
 ELEC ?= $(data)/$(SUBJECT)/ELEC.nii.gz
 # }}}
 
+# misc util {{{
 hemi = lh rh
 sd = $(SUBJECTS_DIR)/$(SUBJECT)
 rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/$(aa).mgz
 here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+# }}}
 
 # bvecs / bvals {{{
 ifneq ($(and $(BVECS),$(BVALS)),)
@@ -246,6 +232,5 @@ $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 	mrconvert -fslgrad $</bvecs.txt $</bvals.txt $*.nii.gz $@
 
 # }}}
-
 
 # vim: foldmethod=marker
