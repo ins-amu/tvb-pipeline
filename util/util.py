@@ -5,6 +5,11 @@ import logging
 import numpy as np
 
 
+def cores():
+    import multiprocessing
+    print(multiprocessing.cpu_count()//2)
+
+
 def vol_val_xyz(vol, aff, val):
     vox_idx = np.argwhere(vol == val)
     xyz = aff.dot(np.c_[vox_idx, np.ones(vox_idx.shape[0])].T)[:3].T

@@ -79,4 +79,6 @@ include make/StereoEEG.mk
 include make/Utilities.mk
 #}}}
 
+include Stan.mk
+
 # vim: foldmethod=marker
