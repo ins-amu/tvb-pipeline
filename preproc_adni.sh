@@ -7,4 +7,4 @@
 # > ./preproc_adni.sh
 
 fslmerge -t $DTI_DIR/$DTI_MERGED_FILE $DTI_DIR/*.nii
-python xml2bvalsbvecs.py $DTI_DIR/bvals.txt $DTI_DIR/bvecs.txt $DTI_DIR/*.xml
+python -m util.xml2bvalsbvecs $DTI_DIR/bvals.txt $DTI_DIR/bvecs.txt $DTI_DIR/*.xml
