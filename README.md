@@ -5,7 +5,7 @@ three main components
 
 - process & dataflow in a [Makefile](Makefile)
 - supporting Python utilities in a [util](util) module
-- a [Dockerfile](Dockerfile) & [image](https://hub.docker.com/r/maedoc/tvb-make/) with all dependencies
+- a [Dockerfile](docker/Dockerfile) & [image](https://hub.docker.com/r/maedoc/tvb-make/) with all dependencies
 
 **Table of contents**
 

@@ -58,7 +58,7 @@ dag.png: Makefile params.txt
 	make -Bnd $$(head -n1 params.txt) | make2graph | dot -Tpng -o dag.png
 
 docker:
-	sudo docker build -t maedoc/tvb-make .
+	cd docker && sudo docker build -t maedoc/tvb-make .
 
 # }}}
 
