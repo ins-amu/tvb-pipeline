@@ -1,9 +1,11 @@
 # To build this image, you'll need to download FreeSurfer, MNE, DCMTK
-# and have a valid FreeSurfer license file.
+# and Intel CL driver tarballs and have a valid FreeSurfer license file.
 
 FROM ubuntu:16.04
 MAINTAINER Marmaduke Woodman <mmwoodman@gmail.com>
 
+# /opt used during installation, but 
+# /opt/tvb-make is final workdir, set below
 WORKDIR /opt
 
 # system packages {{{
@@ -13,7 +15,7 @@ RUN apt-get update && apt-get install -y wget \
   && apt-get install -y --allow-unauthenticated g++ libeigen3-dev git python \
       python-numpy zlib1g-dev cmake tcsh libeigen3-dev liblapack-dev libblas-dev \
       libssl-dev fsl-complete libhdf5-dev zlib1g-dev libmatio-dev libopenblas-dev \
-      liblapacke-dev cpio
+      liblapacke-dev cpio vim-nox tmux
 # }}}
 
 # external packages {{{
@@ -92,6 +94,15 @@ RUN for repo in library data; do git clone https://github.com/the-virtual-brain/
 ENV PYTHONPATH=/opt/tvb-library:/opt/tvb-data:$PYTHONPATH
 # }}}
 
+# OpenCL {{{
+ADD opencl_runtime_*.tar.gz /opt/
+RUN cd opencl* \
+ && sed -i 's,decline,accept,g' silent.cfg \
+ && ./install.sh -s silent.cfg \
+ && cd .. \
+ && rm -rf opencl*
+# }}}
+
 # Ports {{{
 EXPOSE 8888
 EXPOSE 8000
@@ -102,3 +113,5 @@ RUN git clone https://github.com/maedoc/tvb-make
 WORKDIR /opt/tvb-make
 ENTRYPOINT ["make"]
 # }}}
+
+# vim: foldmethod=marker
