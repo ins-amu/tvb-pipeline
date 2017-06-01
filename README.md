@@ -7,6 +7,18 @@ three main components
 - supporting Python utilities in a [util](util) module
 - a [Dockerfile](Dockerfile) & [image](https://hub.docker.com/r/maedoc/tvb-make/) with all dependencies
 
+**Table of contents**
+
+- [Functionality](#functionality)
+- [Dependencies](#dependencies)
+- [Usage](#usage)
+  - [Targets](#targets)
+  - [Docker](#docker)
+  - [Marseille Cluster](#marseille-cluster)
+- [Special Cases](#special-cases)
+  - [JPEG encoded images](#jpeg-encoded-images)
+  - [ADNI data](#adni-data)
+
 ## Functionality
 
 - Automatic generation of surface & connectivity datasets usuable in TVB
