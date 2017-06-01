@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import argparse
 import logging
-import multiprocessing
-import subprocess
-import nibabel as nb
 import numpy as np
-import scipy.ndimage
 
 
 def vol_val_xyz(vol, aff, val):
@@ -41,6 +35,7 @@ def build_fs_label_name_map(lut_path):
 
 
 def label_volume_centers(label_volume, output_tsv):
+    import nibabel as nb
     log = logging.getLogger('label_volume_centers')
     
     log.info('reading %r', label_volume)
@@ -61,6 +56,8 @@ def label_volume_centers(label_volume, output_tsv):
 
 
 def label_with_dilation(masked_CT_fname, dilated_CT_fname, label_CT_fname):
+    import nibabel as nb
+    import scipy.ndimage
     log = logging.getLogger('label_with_dilation')
     log.info('reading mask %r', masked_CT_fname)
     mask = nb.load(masked_CT_fname)
@@ -115,6 +112,7 @@ def periodic_xyz_for_object(lab, val, aff, bw=0.1, doplot=False):
 
 
 def gen_seeg_xyz(labeled_CT_fname, schema_fname, seeg_xyz_fname):
+    import nibabel as nb
     label_to_name = {}
     with open(schema_fname, "r") as fd:
         for line in fd.readlines():
@@ -156,6 +154,7 @@ def gen_contacts_on_electrode(name, target, entry, ncontacts):
     return contacts
 
 def transform(coords, src_img, dest_img, transform_mat):
+    import subprocess
     coords_str = " ".join([str(x) for x in coords])
 
     cp = subprocess.run("echo %s | img2imgcoord -mm -src %s -dest %s -xfm %s" \
@@ -217,6 +216,9 @@ def _label_objects_one(args):
 
 
 def label_objects(masked_fname, labeled_fname, *args):
+    import nibabel as nb
+    import scipy.ndimage
+    import multiprocessing
     nii = nb.load(masked_fname)
     labels, _ = scipy.ndimage.label(nii.get_data())
     log = logging.getLogger('label_objects')
