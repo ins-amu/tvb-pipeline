@@ -87,8 +87,8 @@ RUN curl -O https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.s
 RUN bash Miniconda2-latest-Linux-x86_64.sh -b -p /opt/conda
 ENV PATH /opt/conda/bin:$PATH
 RUN conda install -c conda-forge jupyterlab \
- && conda install nomkl numpy numexpr numba matplotlib scipy cython scikit-learn \
- && pip install gdist psutil networkx nibabel nilearn mne
+ && conda install nomkl numpy numexpr numba matplotlib scipy cython scikit-learn pandas \
+ && pip install gdist psutil networkx nibabel nilearn mne pystan seaborn SALib
 RUN for repo in library data; do git clone https://github.com/the-virtual-brain/tvb-$repo; done
 ENV PYTHONPATH /opt/tvb-library:/opt/tvb-data:$PYTHONPATH
 # }}}
