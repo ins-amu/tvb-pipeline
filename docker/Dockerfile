@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y wget \
   && apt-get install -y --allow-unauthenticated g++ libeigen3-dev git python \
       python-numpy zlib1g-dev cmake tcsh libeigen3-dev liblapack-dev libblas-dev \
       libssl-dev fsl-complete libhdf5-dev zlib1g-dev libmatio-dev libopenblas-dev \
-      liblapacke-dev
+      liblapacke-dev cpio
 # }}}
 
 # external packages {{{
@@ -45,8 +45,8 @@ ENV FIX_VERTEX_AREA= \
     PERL5LIB=/opt/freesurfer/mni/share/perl5 \
     SUBJECTS_DIR=/opt/freesurfer/subjects \
     XUSERFILESEARCHPATH=/opt/MNE-2.7.0-3106-Linux-x86_64/share/app-defaults/%N \
-    LD_LIBRARY_PATH=/opt/MNE-2.7.0-3106-Linux-x86_64/lib \
-    PATH=/opt/MNE-2.7.0-3106-Linux-x86_64/bin:/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin:/opt/dcmtk/bin:$PATH \
+    LD_LIBRARY_PATH=/usr/lib/fsl/5.0:/opt/MNE-2.7.0-3106-Linux-x86_64/lib \
+    PATH=/usr/lib/fsl/5.0:/usr/share/fsl/5.0/bin:/opt/MNE-2.7.0-3106-Linux-x86_64/bin:/opt/freesurfer/bin:/opt/freesurfer/fsfast/bin:/opt/freesurfer/tktools:/opt/freesurfer/mni/bin:/opt/dcmtk/bin:$PATH \
     DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic \
     FSLDIR=/usr/share/fsl/5.0 \
     FSLBROWSER=/etc/alternatives/x-www-browser \
@@ -57,8 +57,6 @@ ENV FIX_VERTEX_AREA= \
     FSLREMOTECALL= \
     FSLTCLSH=/usr/bin/tclsh \
     FSLWISH=/usr/bin/wish \
-    LD_LIBRARY_PATH=/usr/lib/fsl/5.0:$LD_LIBRARY_PATH \
-    PATH=/usr/lib/fsl/5.0:/usr/share/fsl/5.0/bin:$PATH \
     POSSUMDIR=/usr/share/fsl/5.0
 # }}}
 
@@ -86,12 +84,12 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 # Py2 & TVB {{{
 RUN curl -O https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
 RUN bash Miniconda2-latest-Linux-x86_64.sh -b -p /opt/conda
-ENV PATH /opt/conda/bin:$PATH
+ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -c conda-forge jupyterlab \
  && conda install nomkl numpy numexpr numba matplotlib scipy cython scikit-learn pandas \
  && pip install gdist psutil networkx nibabel nilearn mne pystan seaborn SALib
 RUN for repo in library data; do git clone https://github.com/the-virtual-brain/tvb-$repo; done
-ENV PYTHONPATH /opt/tvb-library:/opt/tvb-data:$PYTHONPATH
+ENV PYTHONPATH=/opt/tvb-library:/opt/tvb-data:$PYTHONPATH
 # }}}
 
 # Ports {{{
