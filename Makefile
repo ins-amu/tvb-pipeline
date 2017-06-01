@@ -100,7 +100,7 @@ $(sd)/mri/$(aa).xyz: $(fs_done)
 	python -m util label_volume_centers $(sd)/mri/$(aa).mgz $@
 
 $(sd)/aseg2srf: $(fs_done)
-	./aseg2srf -s $(SUBJECT)
+	$(here)/util/aseg2srf -s $(SUBJECT)
 
 # }}}
 
@@ -251,7 +251,7 @@ $(sd)/tvb: $(sd)/mri/orig/001.mgz
 $(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_lengths.txt $(sd)/tvb $(sd)/aseg2srf
 	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
 	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc
-	./create_tvb_dataset.py $(sd) \
+	python -m util.create_tvb_dataset $(sd) \
 	    $(lut_fs) $(lut_mrt3_fs) \
 	    $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_counts.txt \
 	    $(sd)/tvb/connectivity.zip $(sd)/tvb
