@@ -1,5 +1,6 @@
 OAR*
 *.tar.*
+*.tgz
 license.txt
 __pycache__
 *.pyc
