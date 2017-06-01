@@ -9,6 +9,11 @@ parc ?= aparc.a2009s
 aa ?= aparc+aseg
 resamp_target ?= fsaverage5
 elec_mode ?= CT
+lut_fs := $(FREESURFER_HOME)/FreeSurferColorLUT.txt
+lut_mrt3_fs := $(shell find $(MRT3) -name fs_default.txt | head -n 1)
+ifneq ($(and $(BVECS),$(BVALS)),)
+    raw_mif_convert_flags := -fslgrad $(BVECS) $(BVALS)
+endif
 # }}}
 
 # default data layout {{{
@@ -26,15 +31,6 @@ rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/$(aa).mgz
 here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # }}}
-
-# bvecs / bvals {{{
-ifneq ($(and $(BVECS),$(BVALS)),)
-    raw_mif_convert_flags := -fslgrad $(BVECS) $(BVALS)
-endif
-# }}}
-
-lut_fs = $(FREESURFER_HOME)/FreeSurferColorLUT.txt
-lut_mrt3_fs = $(MRT3)/src/connectome/tables/fs_default.txt
 
 .PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
 default:
