@@ -60,6 +60,9 @@ dag.png: Makefile params.txt
 docker:
 	cd docker && sudo docker build -t maedoc/tvb-make .
 
+tmux:
+	tmux
+
 # }}}
 
 # FreeSurfer reconstruction & downsampling# {{{
