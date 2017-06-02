@@ -75,11 +75,11 @@ ENV MRT3=/opt/mrtrix3
 ENV PATH=/opt/mrtrix3/bin:$PATH
 # }}}
 
-# OpenMEEG on commit w/ 100% test passing # {{{
+# OpenMEEG # {{{
 RUN git clone https://github.com/openmeeg/openmeeg \
- && git checkout 03b26566989eb4dc01f41eee2de48024a2e76ff1 \
- && cd openmeeg/OpenMEEG && \
-    mkdir build && cd build && \
+ && cd openmeeg/OpenMEEG \
+ && git checkout 2.4.prerelease \
+ && mkdir build && cd build && \
     cmake -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release \
         -DENABLE_PYTHON=OFF -DCMAKE_INSTALL_PREFIX=/usr/local \
         -DBLASLAPACK_IMPLEMENTATION="OpenBLAS" \
