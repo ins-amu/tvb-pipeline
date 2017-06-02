@@ -106,6 +106,20 @@ EXPOSE 8888
 EXPOSE 8000
 # }}}
 
+# More OpenCL stuff {{{
+RUN pip install mako
+RUN git clone --recursive https://github.com/pyopencl/pyopencl
+RUN apt-get install -y ocl-icd-opencl-dev
+RUN cd pyopencl && git checkout master && ./configure.py && python setup.py install
+
+RUN apt-get install -y mercurial
+RUN git clone --recursive https://github.com/inducer/loopy \
+ && cd loopy && pip install -r requirements.txt && python setup.py install
+RUN git clone https://github.com/the-virtual-brain/tvb-hpc \
+ && cd tvb-hpc && pip install -r requirements.txt && python setup.py install
+# }}}
+
+
 # Makefile as entry point {{{
 RUN git clone https://github.com/maedoc/tvb-make
 WORKDIR /opt/tvb-make
