@@ -204,14 +204,16 @@ $(sd)/seeg/masked_ELEC.nii.gz: $(sd)/seeg/ELEC_in_T1.nii.gz $(sd)/seeg/mask.nii.
 $(sd)/seeg/labeled_ELEC.nii.gz: $(sd)/seeg/masked_ELEC.nii.gz
 	python -m util.util label_objects $< $@ $(nthread)
 
+ifdef ELEC_ENDPOINTS
+# more reliable to mark endpoints
+$(sd)/seeg/seeg.xyz: $(ELEC_ENDPOINTS) $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
+	python -m util.util gen_seeg_xyz_from_endpoints $< $@ $(sd)/seeg/$(elec_mode)_to_T1.mat \
+	    $(sd)/seeg/$(elec_mode).nii.gz $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
+else
 # user must label electrodes by hand at some point
 $(sd)/seeg/seeg.xyz: $(sd)/seeg/labeled_$(elec_mode).nii.gz $(sd)/seeg/schema.txt
 	python -m util.util gen_seeg_xyz $^ $@
-
-# more reliable to mark endpoints
-$(sd)/seeg/seeg.xyz: $(sd)/seeg/schema_endpoints.txt $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
-	python -m util.util gen_seeg_xyz_from_endpoints $< $@ $(sd)/seeg/$(elec_mode)_to_T1.mat \
-	    $(sd)/seeg/$(elec_mode).nii.gz $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
+endif
 
 $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
 	python -m util.util seeg_gain $^ $@
