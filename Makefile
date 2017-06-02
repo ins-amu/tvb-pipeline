@@ -96,7 +96,7 @@ $(sd)/surf/%.$(sval).$(resamp_target): $(rtd) $(fs_done)
 		--tval $(sd)/label/$*.$(parc).annot.$(resamp_target)
 
 $(sd)/mri/$(aa).xyz: $(fs_done)
-	python -m util label_volume_centers $(sd)/mri/$(aa).mgz $@
+	python -m util.util label_volume_centers $(sd)/mri/$(aa).mgz $@
 
 $(sd)/aseg2srf: $(fs_done)
 	$(here)/util/aseg2srf -s $(SUBJECT)
@@ -161,7 +161,7 @@ $(sd)/dwi/triu_lengths.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif
 	tck2connectome $^ $@ -scale_length -stat_edge mean -force -nthreads $(nthread)
 
 $(sd)/dwi/%.txt: $(sd)/dwi/triu_%.txt
-	python -m util postprocess_connectome $< $@
+	python -m util.util postprocess_connectome $< $@
 
 # }}}
 
@@ -188,7 +188,7 @@ $(sd)/seeg/dilated_CT.nii.gz: $(sd)/seeg/masked_CT.nii.gz
 	mri_binarize --i $< --o $@ --min 0.5 --dilate 2 --erode 1
 
 $(sd)/seeg/labeled_CT.nii.gz: $(sd)/seeg/masked_CT.nii.gz $(sd)/seeg/dilated_CT.nii.gz
-	python -m util label_with_dilation $^ $@
+	python -m util.util label_with_dilation $^ $@
 
 # case of T1 w/ elec, no dilation
 $(sd)/seeg/ELEC_in_T1.nii.gz: $(ELEC) $(fs_done) $(sd)/mri/T1.RAS.nii.gz $(sd)/seeg
@@ -202,19 +202,19 @@ $(sd)/seeg/masked_ELEC.nii.gz: $(sd)/seeg/ELEC_in_T1.nii.gz $(sd)/seeg/mask.nii.
 	mri_binarize --i $< --o $@ --min $(elec_min) --max $(elec_max) --mask $(sd)/seeg/mask.nii.gz
 
 $(sd)/seeg/labeled_ELEC.nii.gz: $(sd)/seeg/masked_ELEC.nii.gz
-	python -m util label_objects $< $@ $(nthread)
+	python -m util.util label_objects $< $@ $(nthread)
 
 # user must label electrodes by hand at some point
 $(sd)/seeg/seeg.xyz: $(sd)/seeg/labeled_$(elec_mode).nii.gz $(sd)/seeg/schema.txt
-	python -m util gen_seeg_xyz $^ $@
+	python -m util.util gen_seeg_xyz $^ $@
 
 # more reliable to mark endpoints
 $(sd)/seeg/seeg.xyz: $(sd)/seeg/schema_endpoints.txt $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
-	python -m util gen_seeg_xyz_from_endpoints $< $@ $(sd)/seeg/$(elec_mode)_to_T1.mat \
+	python -m util.util gen_seeg_xyz_from_endpoints $< $@ $(sd)/seeg/$(elec_mode)_to_T1.mat \
 	    $(sd)/seeg/$(elec_mode).nii.gz $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
 
 $(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
-	python -m util seeg_gain $^ $@
+	python -m util.util seeg_gain $^ $@
 
 # }}}
 
