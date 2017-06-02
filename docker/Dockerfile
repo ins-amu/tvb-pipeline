@@ -24,6 +24,12 @@ ADD freesurfer*.tar.gz /opt/
 ADD license.txt /opt/freesurfer/license.txt
 ADD dcmtk*.tar.bz2 /opt
 RUN mv dcmtk* dcmtk
+ADD opencl_runtime_*.tar.gz /opt/
+RUN cd opencl* \
+ && sed -i 's,decline,accept,g' silent.cfg \
+ && ./install.sh -s silent.cfg \
+ && cd .. \
+ && rm -rf opencl*
 # }}}
 
 # FS, FSL, MNE env vars {{{
@@ -63,15 +69,16 @@ ENV FIX_VERTEX_AREA= \
 # }}}
 
 # Mrtrix3 {{{
-RUN git clone https://github.com/mrtrix3/mrtrix3 \
- && cd mrtrix3 && ./configure -nogui && ./build
+RUN git clone https://github.com/mrtrix3/mrtrix3 && cd mrtrix3 \
+ && git checkout 0.3.16 && ./configure -nogui && ./build
 ENV MRT3=/opt/mrtrix3
 ENV PATH=/opt/mrtrix3/bin:$PATH
 # }}}
 
-# Openmeeg # {{{
-RUN git clone https://github.com/openmeeg/openmeeg
-RUN cd openmeeg/OpenMEEG && \
+# OpenMEEG on commit w/ 100% test passing # {{{
+RUN git clone https://github.com/openmeeg/openmeeg \
+ && git checkout 03b26566989eb4dc01f41eee2de48024a2e76ff1 \
+ && cd openmeeg/OpenMEEG && \
     mkdir build && cd build && \
     cmake -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Release \
         -DENABLE_PYTHON=OFF -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -92,15 +99,6 @@ RUN conda install -c conda-forge jupyterlab \
  && pip install gdist psutil networkx nibabel nilearn mne pystan seaborn SALib
 RUN for repo in library data; do git clone https://github.com/the-virtual-brain/tvb-$repo; done
 ENV PYTHONPATH=/opt/tvb-library:/opt/tvb-data:$PYTHONPATH
-# }}}
-
-# OpenCL {{{
-ADD opencl_runtime_*.tar.gz /opt/
-RUN cd opencl* \
- && sed -i 's,decline,accept,g' silent.cfg \
- && ./install.sh -s silent.cfg \
- && cd .. \
- && rm -rf opencl*
 # }}}
 
 # Ports {{{
