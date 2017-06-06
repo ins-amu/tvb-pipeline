@@ -12,7 +12,7 @@ data_mapping="-v $data_path:/opt/tvb-make/data"
 
 if $docker info &> /dev/null
 then
-    echo $docker run --rm -it $data_mapping maedoc/tvb-make $@
+    $docker run --rm -it $data_mapping maedoc/tvb-make $@
 else
     echo "unable to access Docker, is it running?"
     exit 1
