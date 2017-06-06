@@ -1,4 +1,4 @@
 #!/bin/bash
 
-source activate
+source setup-mrs-cluster
 make $@
