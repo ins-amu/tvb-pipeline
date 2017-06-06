@@ -55,8 +55,11 @@ clean:
 nothing:
 	echo "doing nothing for subject $(SUBJECT) per request"
 
-dag.png: Makefile params.txt
-	make -Bnd $$(head -n1 params.txt) | make2graph | dot -Tpng -o dag.png
+dag.png: Makefile
+	mkdir dag
+	touch dag/{t1,dwi}
+	make -Bnd SUBJECTS_DIR=subjects SUBJECT=dag T1=t1 DWI=dwi fs-recon conn | make2graph | dot -Tpng -o dag.png
+	rm -r dag
 
 docker:
 	cd docker && sudo docker build -t maedoc/tvb-make .
