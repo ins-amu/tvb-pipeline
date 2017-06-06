@@ -76,9 +76,8 @@ notebook:
 include make/FreeSurfer.mk
 include make/Diffusion.mk
 include make/StereoEEG.mk
+include make/Stan.mk
 include make/Utilities.mk
 #}}}
-
-include Stan.mk
 
 # vim: foldmethod=marker
