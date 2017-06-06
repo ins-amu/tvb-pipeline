@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# abs path to cluster/run-one script, regardless of
+# working directory of invocation
+run_one_path=$(cd $(dirname $0) && pwd)/run-one
+
+# common args to oarsub
+oarsub_common="oarsub -l nodes=1,walltime=24:00:00 "
+
+if [ "$#" -ne 1 ]
+then
+    $oarsub_common "$run_one_path $@"
+else
+    $oarsub_common --array-param-file $1 $run_one_path
+fi
