@@ -63,6 +63,9 @@ docker:
 tmux:
 	tmux
 
+notebook:
+	jupyter notebook --allow-root --ip=0.0.0.0
+
 # }}}
 
 # FreeSurfer reconstruction & downsampling# {{{
