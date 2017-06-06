@@ -65,6 +65,25 @@ outputs.
 
 _TODO_ more details & help on this
 
+### Config file
+
+As an added convenience, a file in Make format can be provided via the `CONFIG`
+variable, with the desired values or even extra rules, overriding the defaults.
+For example, the line
+```bash
+make SUBJECT=tvb T1=data/t1 fs-recon conn
+```
+could be replaced by a file `tvb.config.mk`
+```make
+SUBJECT := tvb
+T1 := data/t1
+.DEFAULT: fs-recon conn
+```
+and the invocation
+```bash
+make CONFIG=tvb.config.mk
+```
+
 ### Docker
 
 The `docker/run` script facilitates invoking the pipeline

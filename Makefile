@@ -80,4 +80,7 @@ include make/Stan.mk
 include make/Utilities.mk
 #}}}
 
+# user provided config file
+-include $(CONFIG)
+
 # vim: foldmethod=marker
