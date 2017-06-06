@@ -25,6 +25,7 @@ ELEC ?= $(data)/$(SUBJECT)/ELEC.nii.gz
 # }}}
 
 # misc util {{{
+export SUBJECTS_DIR
 hemi = lh rh
 sd = $(SUBJECTS_DIR)/$(SUBJECT)
 rtd = $(SUBJECTS_DIR)/$(resamp_target)

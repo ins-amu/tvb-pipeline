@@ -1,4 +1,5 @@
 #!/bin/bash
 
-source setup-mrs-cluster
+run_one_path=$(cd $(dirname $0) && pwd)
+source $run_one_path/env
 make $@

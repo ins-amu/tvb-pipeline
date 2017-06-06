@@ -63,31 +63,49 @@ outputs.
 - `resamp-anat` - Lower resolution cortical surfaces & annotations
 - `conn` - Connectivity files
 
+_TODO_ more details & help on this
+
 ### Docker
 
-Docker requires you to specify where your data is, so assuming you
-have your data in `/home/me/data`, you might start with
-```sh
-docker run --rm -it -v /home/me/data:/data maedoc/tvb-make bash
+The `docker/run` script facilitates invoking the pipeline
+in a virtual machine, so that no installation is required:
+```bash
+docker/run arguments...
 ```
-and invoke commands as required.  Making this more user friendly
-is still a work in progress.
+The `data` folder in the current folder is available to the
+container under the same name; place input data there and
+provide corresponding paths to the pipeline. 
+For example, if you use `/work/project1` as a working directory,
+create `/work/project1/data`, place a T1 at `work/project1/data/T1.nii.gz`
+and invoke as follows
+```bash
+~ $ cd /work/project1
+/work/project1 $ /path/to/tvb-make/docker/run SUBJECT=tvb T1=data/T1.nii.gz fs-recon
+...
+```
+The mapped directory can be customized with the `TVB_MAKE_DATA`
+environment variable.
 
 ### Marseille Cluster
 
-Most dependencies are available on the Marseille cluster, and they
-can be made available with
+The `cluster/run` script assists in running the pipeline on the Marseille
+cluster through two modes. First, invoke with typical arguments
 ```bash
-source activate
+cluster/run SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
 ```
-
-Additionally, the [run-one.sh](run-one.sh) script simplifies submitting
-jobs to OAR, e.g.
-
-The `run-one.sh` script can be used with OAR to run many jobs, e.g.
-```bash
-oarsub -l nodes=1,walltime=24:00:00 --array-param-file params.txt ./run-one.sh
+for a single run in a single OAR job, or for many subjects,
+create a file with multiple lines of arguments, e.g.
 ```
+SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
+SUBJECTS_DIR=fs SUBJECT=bar T1=data/T2.nii.gz fs-recon conn
+SUBJECTS_DIR=fs SUBJECT=baz T1=data/T3.nii.gz conn
+```
+Each line will result in the pipeline running once for the arguments
+on a given line, and an OAR job.
+
+NB You need to provide a custom, valid FreeSurfer `SUBJECTS_DIR`,
+since the default directories on the cluster (`/soft/freesurfer*/subjects`)
+are not writeable by users.
 
 ## Special Cases
 

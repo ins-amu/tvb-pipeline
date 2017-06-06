@@ -1,7 +1,7 @@
 # environment required to run commands
 
 export FREESURFER_HOME=/soft/freesurfer-6
-export SUBJECTS_DIR=$(pwd)/fs
+export SUBJECTS_DIR=${SUBJECTS_DIR:-$(pwd)/fs}
 source $FREESURFER_HOME/FreeSurferEnv.sh
 export MNE_ROOT=/soft/MNE-2.7.3-3268-Linux-x86_64
 source $MNE_ROOT/bin/mne_setup_sh
