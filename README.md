@@ -94,11 +94,15 @@ cluster through two modes. First, invoke with typical arguments
 cluster/run SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
 ```
 for a single run in a single OAR job, or for many subjects,
-create a file with multiple lines of arguments, e.g.
+create a file `params.txt` with multiple lines of arguments, e.g.
 ```
 SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
 SUBJECTS_DIR=fs SUBJECT=bar T1=data/T2.nii.gz fs-recon conn
 SUBJECTS_DIR=fs SUBJECT=baz T1=data/T3.nii.gz conn
+```
+then
+```
+cluster/run params.txt
 ```
 Each line will result in the pipeline running once for the arguments
 on a given line, and an OAR job.
