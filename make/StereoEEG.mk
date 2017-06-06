@@ -1,0 +1,52 @@
+# Stereotactic EEG & CT
+
+$(sd)/seeg: $(sd)/mri/orig/001.mgz
+	mkdir -p $(sd)/seeg
+
+$(sd)/seeg/CT_in_T1.nii.gz: $(CT) $(fs_done) $(sd)/mri/T1.RAS.nii.gz $(sd)/seeg
+	mri_convert $< $(sd)/seeg/CT.nii.gz --out_orientation RAS
+	flirt -in $(sd)/seeg/CT.nii.gz -ref $(sd)/mri/T1.RAS.nii.gz \
+	    -omat $(sd)/seeg/CT_to_T1.mat \
+	    -out $(sd)/seeg/CT_in_T1.nii.gz \
+	    $(regopts)
+
+$(sd)/seeg/mask.nii.gz: $(sd)/mri/brain.RAS.nii.gz $(sd)/seeg
+	mri_binarize --i $< --o $@ --min 10 --erode 4
+
+$(sd)/seeg/masked_CT.nii.gz: $(sd)/seeg/CT_in_T1.nii.gz $(sd)/seeg/mask.nii.gz
+	mri_binarize --i $< --o $@ --min $(ct_thresh) \
+	    --mask $(sd)/seeg/mask.nii.gz
+
+$(sd)/seeg/dilated_CT.nii.gz: $(sd)/seeg/masked_CT.nii.gz
+	mri_binarize --i $< --o $@ --min 0.5 --dilate 2 --erode 1
+
+$(sd)/seeg/labeled_CT.nii.gz: $(sd)/seeg/masked_CT.nii.gz $(sd)/seeg/dilated_CT.nii.gz
+	python -m util.util label_with_dilation $^ $@
+
+# case of T1 w/ elec, no dilation
+$(sd)/seeg/ELEC_in_T1.nii.gz: $(ELEC) $(fs_done) $(sd)/mri/T1.RAS.nii.gz $(sd)/seeg
+	mri_convert $< $(sd)/seeg/ELEC.nii.gz --out_orientation RAS
+	flirt -in $(sd)/seeg/ELEC.nii.gz -ref $(sd)/mri/T1.RAS.nii.gz \
+	    -omat $(sd)/seeg/ELEC_to_T1.mat \
+	    -out $(sd)/seeg/ELEC_in_T1.nii.gz \
+	    $(regopts)
+
+$(sd)/seeg/masked_ELEC.nii.gz: $(sd)/seeg/ELEC_in_T1.nii.gz $(sd)/seeg/mask.nii.gz
+	mri_binarize --i $< --o $@ --min $(elec_min) --max $(elec_max) --mask $(sd)/seeg/mask.nii.gz
+
+$(sd)/seeg/labeled_ELEC.nii.gz: $(sd)/seeg/masked_ELEC.nii.gz
+	python -m util.util label_objects $< $@ $(nthread)
+
+ifdef ELEC_ENDPOINTS
+# more reliable to mark endpoints
+$(sd)/seeg/seeg.xyz: $(ELEC_ENDPOINTS) $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
+	python -m util.util gen_seeg_xyz_from_endpoints $< $@ $(sd)/seeg/$(elec_mode)_to_T1.mat \
+	    $(sd)/seeg/$(elec_mode).nii.gz $(sd)/seeg/$(elec_mode)_in_T1.nii.gz
+else
+# user must label electrodes by hand at some point
+$(sd)/seeg/seeg.xyz: $(sd)/seeg/labeled_$(elec_mode).nii.gz $(sd)/seeg/schema.txt
+	python -m util.util gen_seeg_xyz $^ $@
+endif
+
+$(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
+	python -m util.util seeg_gain $^ $@
