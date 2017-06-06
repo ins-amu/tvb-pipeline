@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y wget \
   && apt-get install -y --allow-unauthenticated g++ libeigen3-dev git python \
       python-numpy zlib1g-dev cmake tcsh libeigen3-dev liblapack-dev libblas-dev \
       libssl-dev fsl-complete libhdf5-dev zlib1g-dev libmatio-dev libopenblas-dev \
-      liblapacke-dev cpio vim-nox tmux
+      liblapacke-dev cpio vim-nox tmux ocl-icd-opencl-dev mercurial
 # }}}
 
 # external packages {{{
@@ -90,35 +90,27 @@ RUN git clone https://github.com/openmeeg/openmeeg \
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 # }}}
 
-# Py2 & TVB {{{
-RUN curl -O https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-RUN bash Miniconda2-latest-Linux-x86_64.sh -b -p /opt/conda
+# Py 3 stack {{{
+RUN curl -O https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
 ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -c conda-forge jupyterlab \
  && conda install nomkl numpy numexpr numba matplotlib scipy cython scikit-learn pandas \
- && pip install gdist psutil networkx nibabel nilearn mne pystan seaborn SALib
-RUN for repo in library data; do git clone https://github.com/the-virtual-brain/tvb-$repo; done
-ENV PYTHONPATH=/opt/tvb-library:/opt/tvb-data:$PYTHONPATH
-# }}}
-
-# Ports {{{
-EXPOSE 8888
-EXPOSE 8000
-# }}}
-
-# More OpenCL stuff {{{
-RUN pip install mako
-RUN git clone --recursive https://github.com/pyopencl/pyopencl
-RUN apt-get install -y ocl-icd-opencl-dev
-RUN cd pyopencl && git checkout master && ./configure.py && python setup.py install
-
-RUN apt-get install -y mercurial
+ && pip install gdist psutil networkx nibabel nilearn mne pystan seaborn SALib mako
+RUN git clone --branch py3 https://github.com/the-virtual-brain/tvb-library
+ENV PYTHONPATH=/opt/tvb-library:$PYTHONPATH
+RUN git clone --recursive https://github.com/pyopencl/pyopencl \
+ && cd pyopencl && ./configure.py && python setup.py install
 RUN git clone --recursive https://github.com/inducer/loopy \
  && cd loopy && pip install -r requirements.txt && python setup.py install
 RUN git clone https://github.com/the-virtual-brain/tvb-hpc \
  && cd tvb-hpc && pip install -r requirements.txt && python setup.py install
 # }}}
 
+# Ports {{{
+EXPOSE 8888
+EXPOSE 8000
+# }}}
 
 # Makefile as entry point {{{
 RUN git clone https://github.com/maedoc/tvb-make
