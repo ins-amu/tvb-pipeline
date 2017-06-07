@@ -73,11 +73,11 @@ notebook:
 # }}}
 
 # rules {{{
-include make/FreeSurfer.mk
-include make/Diffusion.mk
-include make/StereoEEG.mk
-include make/Stan.mk
-include make/Utilities.mk
+include $(here)/make/FreeSurfer.mk
+include $(here)/make/Diffusion.mk
+include $(here)/make/StereoEEG.mk
+include $(here)/make/Stan.mk
+include $(here)/make/Utilities.mk
 #}}}
 
 # user provided config file

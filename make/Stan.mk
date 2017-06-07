@@ -1,4 +1,4 @@
-nchains := $(shell python -m util cores) 
+nchains := $(shell python -m util.util cores)
 
 # ensure topic folder created once subject directory is available
 $(sd)/stan: $(sd)/mri/orig/001.mgz
