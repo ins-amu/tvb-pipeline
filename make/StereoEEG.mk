@@ -1,16 +1,15 @@
 # Stereotactic EEG & CT
 
-$(sd)/seeg: $(sd)/mri/orig/001.mgz
+$(sd)/seeg/CT_in_T1.nii.gz: $(CT) $(fs_done) $(sd)/mri/T1.RAS.nii.gz
 	mkdir -p $(sd)/seeg
-
-$(sd)/seeg/CT_in_T1.nii.gz: $(CT) $(fs_done) $(sd)/mri/T1.RAS.nii.gz $(sd)/seeg
 	mri_convert $< $(sd)/seeg/CT.nii.gz --out_orientation RAS
 	flirt -in $(sd)/seeg/CT.nii.gz -ref $(sd)/mri/T1.RAS.nii.gz \
 	    -omat $(sd)/seeg/CT_to_T1.mat \
 	    -out $(sd)/seeg/CT_in_T1.nii.gz \
 	    $(regopts)
 
-$(sd)/seeg/mask.nii.gz: $(sd)/mri/brain.RAS.nii.gz $(sd)/seeg
+$(sd)/seeg/mask.nii.gz: $(sd)/mri/brain.RAS.nii.gz
+	mkdir -p $(sd)/seeg
 	mri_binarize --i $< --o $@ --min 10 --erode 4
 
 $(sd)/seeg/masked_CT.nii.gz: $(sd)/seeg/CT_in_T1.nii.gz $(sd)/seeg/mask.nii.gz
@@ -24,7 +23,8 @@ $(sd)/seeg/labeled_CT.nii.gz: $(sd)/seeg/masked_CT.nii.gz $(sd)/seeg/dilated_CT.
 	python -m util.util label_with_dilation $^ $@
 
 # case of T1 w/ elec, no dilation
-$(sd)/seeg/ELEC_in_T1.nii.gz: $(ELEC) $(fs_done) $(sd)/mri/T1.RAS.nii.gz $(sd)/seeg
+$(sd)/seeg/ELEC_in_T1.nii.gz: $(ELEC) $(fs_done) $(sd)/mri/T1.RAS.nii.gz
+	mkdir -p $(sd)/seeg
 	mri_convert $< $(sd)/seeg/ELEC.nii.gz --out_orientation RAS
 	flirt -in $(sd)/seeg/ELEC.nii.gz -ref $(sd)/mri/T1.RAS.nii.gz \
 	    -omat $(sd)/seeg/ELEC_to_T1.mat \
