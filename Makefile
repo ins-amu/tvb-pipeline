@@ -41,7 +41,7 @@ resamp-anat: $(sd)/surf/lh.$(sval).$(resamp_target) $(sd)/surf/rh.$(sval).$(resa
 tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
 labeled_elec: $(sd)/seeg/labeled_$(elec_mode).nii.gz
-seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain.mat
+seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain_dipole_no-subcort.mat $(sd)/seeg/gain_inv-square.mat
 tvb: $(sd)/tvb/connectivity.zip
 
 mrinfo:
