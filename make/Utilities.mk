@@ -29,12 +29,11 @@
 $(sd)/tvb: $(sd)/mri/orig/001.mgz
 	mkdir -p $(sd)/tvb
 
-$(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_counts.txt $(sd)/tvb $(sd)/aseg2srf
+$(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_counts.txt $(sd)/dwi/triu_lengths.txt $(sd)/tvb $(sd)/aseg2srf
 	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
 	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc
 	python -m util.create_tvb_dataset $(sd) \
 	    $(lut_fs) $(lut_mrt3_fs) \
-	    $(sd)/dwi/triu_lengths.txt $(sd)/dwi/triu_counts.txt \
+		$(sd)/dwi/triu_counts.txt $(sd)/dwi/triu_lengths.txt \
 	    $(sd)/tvb/connectivity.zip $(sd)/tvb
 # }}}
-
