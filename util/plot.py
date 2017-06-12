@@ -2,13 +2,14 @@
 
 import os
 import logging
-import matplotlib.pyplot as plt
 import numpy as np
 import re
 import zipfile
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.colors as mcolors
 
 
 class NamedPoints():
@@ -64,8 +65,6 @@ def seeg_elecs(tvbzip_file, seegxyz, out_fig):
     plt.legend(loc='upper left')
     plt.tight_layout()
     plt.savefig(out_fig)
-
-
 
 
 
