@@ -1,5 +1,41 @@
 #!/bin/bash
 
+function getValue {
+    kw=$1
+    for str in ${@:2}
+    do
+        IFS='=' read -a pair <<< "$str"
+        if [ "${pair[0]}" == "SUBJECT" ]; then
+           echo ${pair[1]}
+           return
+        fi
+    done
+}
+
+function runSubject {
+    args=$*
+
+    # Commented ?
+    if [[ $args =~ [:space:]*\#.* ]]
+    then
+        return
+    fi
+
+    subject=`getValue SUBJECT $args`
+    if [[ -z $subject ]]
+    then
+        echo "Missing SUBJECT"
+        return 1
+    fi
+
+    mkdir -p $subjects_dir/$subject
+    outfile=$subjects_dir/$subject/oar.%jobid%.stdout
+    errfile=$subjects_dir/$subject/oar.%jobid%.stderr
+
+    $oarsub_common -O $outfile -E $errfile "$oar_env $run_one_path $args"
+}
+
+
 # abs path to cluster/run-one script, regardless of
 # working directory of invocation
 run_one_path=$(cd $(dirname $0) && pwd)/run-one
@@ -7,9 +43,20 @@ run_one_path=$(cd $(dirname $0) && pwd)/run-one
 # common args to oarsub
 oarsub_common="oarsub -l nodes=1,walltime=24:00:00 "
 
+# We have to pass the environment variables explicitely
+if [[ ! -z $SUBJECTS_DIR ]]
+then
+    oar_env="env SUBJECTS_DIR=$SUBJECTS_DIR"
+fi
+
+subjects_dir=${SUBJECTS_DIR:-$(pwd)/fs}
+
 if [ "$#" -ne 1 ]
 then
-    $oarsub_common "$run_one_path $@"
+    runSubject $@
 else
-    $oarsub_common --array-param-file $1 $run_one_path
+    while read LINE
+    do
+        runSubject $LINE
+    done < $1
 fi
