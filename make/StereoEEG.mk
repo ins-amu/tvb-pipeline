@@ -48,5 +48,21 @@ $(sd)/seeg/seeg.xyz: $(sd)/seeg/labeled_$(elec_mode).nii.gz $(sd)/seeg/schema.tx
 	python -m util.util gen_seeg_xyz $^ $@
 endif
 
-$(sd)/seeg/gain.mat: $(sd)/seeg/seeg.xyz $(sd)/mri/$(aa).xyz
-	python -m util.util seeg_gain $^ $@
+$(sd)/seeg/seeg.png: $(sd)/tvb/connectivity.zip $(sd)/seeg/seeg.xyz
+	python -m util.plot seeg_elecs $^ $@
+
+$(sd)/seeg/gain_dipole_no-subcort.mat: $(sd)/tvb/connectivity.zip $(sd)/seeg/seeg.xyz
+	python -m util.gain_matrix_seeg \
+	  --mode surface \
+	  --formula dipole \
+	  --no_use_subcort \
+	  --surf_dir $(sd)/tvb/ \
+	  $^ $@
+
+$(sd)/seeg/gain_inv-square.mat: $(sd)/tvb/connectivity.zip $(sd)/seeg/seeg.xyz
+	python -m util.gain_matrix_seeg \
+	  --mode surface \
+	  --formula inv_square \
+	  --use_subcort \
+	  --surf_dir $(sd)/tvb/ \
+	  $^ $@
