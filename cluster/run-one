@@ -2,4 +2,4 @@
 
 run_one_path=$(cd $(dirname $0) && pwd)
 source $run_one_path/env
-make $@
+make -f $run_one_path/../Makefile $@

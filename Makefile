@@ -31,6 +31,7 @@ sd = $(SUBJECTS_DIR)/$(SUBJECT)
 rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/$(aa).mgz
 here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+export PYTHONPATH:=$(here):$(PYTHONPATH)
 # }}}
 
 .PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
