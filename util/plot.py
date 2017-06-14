@@ -20,15 +20,20 @@ class NamedPoints():
 
 
 class Contacts(NamedPoints):
+    contact_name_regex = re.compile("^([A-Za-z]+[']?)([0-9]+)$")
+
     def __init__(self, filename):
         super().__init__(filename)
         self.electrodes = {}
         for i, name in enumerate(self.names):
-            elec_name, _ = re.match("([A-Za-z]+[']*)([0-9]+)", name).groups()
-            if elec_name in self.electrodes:
-                self.electrodes[elec_name].append(i)
-            else:
-                self.electrodes[elec_name] = [i]
+            match = self.contact_name_regex.match(name)
+            if match is None:
+                raise ValueError("Unexpected contact name %s" % name)
+
+            elec_name, _ = match.groups()
+            if elec_name not in self.electrodes:
+                self.electrodes[elec_name] = []
+            self.electrodes[elec_name].append(i)
 
 
 def seeg_elecs(tvbzip_file, seegxyz, out_fig):
