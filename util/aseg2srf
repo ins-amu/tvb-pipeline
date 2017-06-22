@@ -87,7 +87,7 @@ for s in ${SBJLIST} ; do
 
     # Tessellate
     echo "==> Tessellating: ${s}, ${lab0}"
-    ${FREESURFER_HOME}/bin/mri_tessellate \
+    ${FREESURFER_HOME}/bin/mri_tessellate -n \
            ${SUBJECTS_DIR}/${s}/tmp/${RNDSTR}/aseg_${lab0}_filled.mgz \
            ${lab} ${SUBJECTS_DIR}/${s}/tmp/${RNDSTR}/aseg_${lab0}_notsmooth
 
