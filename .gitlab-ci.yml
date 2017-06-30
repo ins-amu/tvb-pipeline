@@ -1,0 +1,12 @@
+stages:
+  - info
+
+info:
+  stage: info
+  script:
+    - pwd
+    - whoami
+    - which python
+    - which pip
+    - which make
+    - echo $PYTHONPATH
