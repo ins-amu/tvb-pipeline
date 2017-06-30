@@ -14,6 +14,7 @@ info:
   tags:
     - compute
 
+# only vep tag ensures access to patient data
 check_perm_vep:
   stage: info
   script:
@@ -21,9 +22,10 @@ check_perm_vep:
   tags:
     - vep
 
+# compute tag does not
 check_perm_compute:
   stage: info
   script:
-    - ls /home/vep/Pipeline/*
+    - [ ! $(ls /home/vep/Pipeline/*) ]
   tags:
     - compute
