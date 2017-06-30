@@ -26,6 +26,6 @@ check_perm_vep:
 check_perm_compute:
   stage: info
   script:
-    - [ ! $(ls /home/vep/Pipeline/*) ]
+    - bash -c "[ ! $(ls /home/vep/Pipeline/*) ]"
   tags:
     - compute
