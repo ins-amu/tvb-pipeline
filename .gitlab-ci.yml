@@ -13,3 +13,17 @@ info:
     - echo $PYTHONPATH
   tags:
     - compute
+
+check_perm_vep:
+  stage: info
+  script:
+    - ls /home/vep/Pipeline/*
+  tags:
+    - vep
+
+check_perm_compute:
+  stage: info
+  script:
+    - ls /home/vep/Pipeline/*
+  tags:
+    - compute
