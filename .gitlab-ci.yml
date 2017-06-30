@@ -1,5 +1,3 @@
-tags:
-  - compute
 
 stages:
   - info
@@ -13,3 +11,5 @@ info:
     - which pip
     - which make
     - echo $PYTHONPATH
+  tags:
+    - compute
