@@ -28,9 +28,9 @@ function runSubject {
         return 1
     fi
 
-    mkdir -p $subjects_dir/$subject
-    outfile=$subjects_dir/$subject/oar.%jobid%.stdout
-    errfile=$subjects_dir/$subject/oar.%jobid%.stderr
+    mkdir -p $subjects_dir/_logs
+    outfile=$subjects_dir/_logs/${subject}.%jobid%.stdout
+    errfile=$subjects_dir/_logs/${subject}.%jobid%.stderr
 
     $oarsub_common -O $outfile -E $errfile "$oar_env $run_one_path $args"
 }
