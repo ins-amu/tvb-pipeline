@@ -33,7 +33,7 @@ $(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_counts.txt $(sd)/dwi/triu_
 	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
 	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc
 	python -m util.create_tvb_dataset $(sd) \
-	    $(lut_fs) $(lut_mrt3_fs) \
+	    $(lut_fs) $(lut_target) \
 		$(sd)/dwi/triu_counts.txt $(sd)/dwi/triu_lengths.txt \
 	    $(sd)/tvb/connectivity.zip $(sd)/tvb
 # }}}

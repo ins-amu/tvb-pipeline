@@ -48,7 +48,7 @@ $(sd)/dwi/fod.mif: $(sd)/dwi/preproc.mif $(sd)/dwi/response.txt
 $(sd)/dwi/label.mif: $(sd)/dwi/aparc_aseg.nii.gz
 	labelconvert $< \
 	    $(lut_fs) \
-	    $(lut_mrt3_fs) \
+	    $(lut_target) \
 	    $@ -force $(dwi_log)
 
 # generate all tracks
