@@ -11,7 +11,7 @@ from util.pkl import write_pkl, read_pkl
 
 
 def compile_model(stan_fname, pkl_fname):
-    write_pkl(pystan.StanModel(file=stan_fname))
+    write_pkl(pkl_fname, pystan.StanModel(file=stan_fname))
 
 
 def optimize(model, data, n=1):
