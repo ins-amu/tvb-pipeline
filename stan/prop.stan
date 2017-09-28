@@ -34,13 +34,12 @@ functions {
   }
 
   real[,] solve(real[] t, real[] y, real tau, real k, real[] a, matrix fc) {
-    int nn = size(a);
-    real par[2 + nn + nn*nn];
-    par[1] = tau;
-    par[2] = k;
-    par[3:nn+2] = a;
-    par[nn+2:nn+2+nn*nn] = to_array_1d(fc);
-    return integrate_ode_rk45(de2, y, 0.0, t, par, rep_array(0.0, 0), rep_array(nn, 1));
+    return integrate_ode_rk45(
+      de2, y, 0.0, t,
+      ode_par(tau, k, a, fc),
+      rep_array(0.0, 0),
+      rep_array(size(a), 1)
+    );
   }
 }
 
