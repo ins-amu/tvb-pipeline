@@ -66,3 +66,26 @@ $(sd)/seeg/gain_inv-square.mat: $(sd)/tvb/connectivity.zip $(sd)/seeg/seeg.xyz
 	  --use_subcort \
 	  --surf_dir $(sd)/tvb/ \
 	  $^ $@
+
+
+# SEEG recordings -------------------------------------------------------------------- #
+.PHONY: seegrec
+seegrec: $(sd)/seegrec/fif $(sd)/seegrec/img
+
+$(sd)/seegrec/fif: $(XLSX) $(SEEGRECDIR)
+	mkdir -p $@
+	python $(here)/util/parse_patient_xlsx.py $(XLSX) $(sd)/seegrec/fif/
+	for i in `find $(SEEGRECDIR) -maxdepth 1 -name '*.eeg'`; do \
+		trg=$@/`basename "$${i%.*}"`.raw.fif; \
+		python $(here)/util/read_eeg.py $$i $$trg; \
+	done;
+
+$(sd)/seegrec/img: $(sd)/seegrec/fif
+	mkdir -p $@
+	for i in `ls $(sd)/seegrec/fif/*.json`; do \
+		trg=$@/`basename $$i .json`; \
+		python $(here)/util/plot_seeg_recording.py $$i avgref $${trg}.avgref.png; \
+		python $(here)/util/plot_seeg_recording.py $$i bipolar $${trg}.bipolar.png; \
+		python $(here)/util/plot_seeg_recording.py $$i spectrogram $${trg}.spectrogram.png; \
+	done;
+# ------------------------------------------------------------------------------------ #

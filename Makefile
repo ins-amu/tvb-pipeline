@@ -1,7 +1,7 @@
 # default parameters {{{
 sval ?= pial
 pe_dir ?= AP
-regopts ?= -cost mutualinfo -dof 12 -searchrz -180 180 -searchry -180 180  -searchrx -180 180 
+regopts ?= -cost mutualinfo -dof 12 -searchrz -180 180 -searchry -180 180  -searchrx -180 180
 ntrack ?= 15M
 ct_thresh ?= 1000
 nthread ?= 8
@@ -22,6 +22,8 @@ T1 ?= $(data)/$(SUBJECT)/T1.nii.gz
 DWI ?= $(data)/$(SUBJECT)/DWI.mif
 CT ?= $(data)/$(SUBJECT)/CT.nii.gz
 ELEC ?= $(data)/$(SUBJECT)/ELEC.nii.gz
+SEEGRECDIR ?= $(data)/$(SUBJECT)/seeg
+XLSX ?= $(data)/patient.xlsx
 # }}}
 
 # misc util {{{
