@@ -127,6 +127,10 @@ class Surface:
             zip_file.write(file_triangles, os.path.basename(file_triangles))
             zip_file.write(file_normals, os.path.basename(file_normals))
 
+    def remap(self, remap_dict):
+        for old_ind, new_ind in remap_dict.items():
+            self.region_mapping[self.region_mapping == old_ind] = new_ind
+
     def save_region_mapping_txt(self, filename):
         np.savetxt(filename, self.region_mapping, fmt="%d")
 
@@ -526,12 +530,6 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
     surf_subcort = get_subcortical_surfaces(subcort_surf_direc, region_index_mapping)
     surf_cort = get_cortical_surfaces(cort_surf_direc, label_direc, region_index_mapping)
 
-    if out_surfaces_dir:
-        surf_subcort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_subcort.txt"))
-        surf_subcort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_subcort.zip"))
-        surf_cort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_cort.txt"))
-        surf_cort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_cort.zip"))
-
     region_params_subcort = compute_region_params(surf_subcort, True)
     region_params_cort = compute_region_params(surf_cort, False)
 
@@ -561,6 +559,12 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
         areas = areas[indices]
         centers = centers[indices]
         cortical = cortical[indices]
+
+        remap_dict = {ind: ind if ind < region_index_mapping.unknown_ind else ind - 1 for ind in range(nregions)}
+        remap_dict[region_index_mapping.unknown_ind] = -1
+        surf_subcort.remap(remap_dict)
+        surf_cort.remap(remap_dict)
+
     else:
         # Add the region to weights and tract lengths
         names = region_index_mapping.trg_table.names
@@ -572,6 +576,12 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
 
     dataset = StructuralDataset(orientations, areas, centers, cortical, weights, tract_lengths, names)
     dataset.save_to_txt_zip(struct_zip_file)
+
+    if out_surfaces_dir:
+        surf_subcort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_subcort.txt"))
+        surf_subcort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_subcort.zip"))
+        surf_cort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_cort.txt"))
+        surf_cort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_cort.zip"))
 
     log.info('complete in %0.2fs', time.time() - tic)
 
