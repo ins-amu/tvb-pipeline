@@ -29,10 +29,10 @@ function runSubject {
     fi
 
     mkdir -p $subjects_dir/_logs
-    outfile=$subjects_dir/_logs/${subject}.%jobid%.stdout
-    errfile=$subjects_dir/_logs/${subject}.%jobid%.stderr
+    outfile=$subjects_dir/_logs/${subject}.%j.stdout
+    errfile=$subjects_dir/_logs/${subject}.%j.stderr
 
-    $oarsub_common -O $outfile -E $errfile "$oar_env $run_one_path $args"
+    $submit_cmd -o $outfile -e $errfile $run_one_path $args
 }
 
 
@@ -40,13 +40,13 @@ function runSubject {
 # working directory of invocation
 run_one_path=$(cd $(dirname $0) && pwd)/run-one
 
-# common args to oarsub
-oarsub_common="oarsub -l nodes=1,walltime=24:00:00 "
+# Submit using SLURM
+submit_cmd="srun -N 1 -n 1"
 
 # We have to pass the environment variables explicitely
 if [[ ! -z $SUBJECTS_DIR ]]
 then
-    oar_env="env SUBJECTS_DIR=$SUBJECTS_DIR"
+    submit_cmd="${submit_cmd} --export=SUBJECTS_DIR=${SUBJECTS_DIR}"
 fi
 
 subjects_dir=${SUBJECTS_DIR:-$(pwd)/fs}
