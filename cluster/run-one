@@ -1,5 +1,4 @@
 #!/bin/bash
 
-run_one_path=$(cd $(dirname $0) && pwd)
-source $run_one_path/env
-make -f $run_one_path/../Makefile $@
+source $PIPELINE_DIR/cluster/env
+make -f $PIPELINE_DIR/Makefile $@

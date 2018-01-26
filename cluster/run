@@ -39,14 +39,17 @@ function runSubject {
 # abs path to cluster/run-one script, regardless of
 # working directory of invocation
 run_one_path=$(cd $(dirname $0) && pwd)/run-one
+pipeline_dir=$(cd $(dirname $0)/.. && pwd)
 
 # Submit using SLURM
-submit_cmd="srun -N 1 -n 1"
+submit_cmd="sbatch -N 1 -n 1 --exclude=n01 --mem=60G --exclusive"
 
 # We have to pass the environment variables explicitely
 if [[ ! -z $SUBJECTS_DIR ]]
 then
-    submit_cmd="${submit_cmd} --export=SUBJECTS_DIR=${SUBJECTS_DIR}"
+    submit_cmd="${submit_cmd} --export=SUBJECTS_DIR=${SUBJECTS_DIR},PIPELINE_DIR=${pipeline_dir}"
+else
+    submit_cmd="${submit_cmd} --export=PIPELINE_DIR=${pipeline_dir}"
 fi
 
 subjects_dir=${SUBJECTS_DIR:-$(pwd)/fs}
@@ -57,6 +60,7 @@ then
 else
     while read LINE
     do
+        echo $LINE
         runSubject $LINE
     done < $1
 fi
