@@ -18,10 +18,10 @@ endif
 
 # default data layout {{{
 data ?= data
-T1 ?= $(data)/$(SUBJECT)/T1.nii.gz
-DWI ?= $(data)/$(SUBJECT)/DWI.mif
-CT ?= $(data)/$(SUBJECT)/CT.nii.gz
-ELEC ?= $(data)/$(SUBJECT)/ELEC.nii.gz
+T1 ?= $(data)/$(SUBJECT)/t1/
+DWI ?= $(data)/$(SUBJECT)/dwi/
+CT ?= $(data)/$(SUBJECT)/elec/CT.nii.gz
+ELEC ?= $(data)/$(SUBJECT)/elec/ELEC.nii.gz
 SEEGRECDIR ?= $(data)/$(SUBJECT)/seeg
 XLSX ?= $(data)/patient.xlsx
 # }}}
