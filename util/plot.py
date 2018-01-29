@@ -89,7 +89,7 @@ ras_slice_indices = {
 
 
 def get_slice(img, slice_type, ras_coord):
-    eps = 1e-20
+    eps = 1e-6
 
     affine = img.affine
 
@@ -150,18 +150,26 @@ def plot_t1_elec(t1_img_file, elec_img_file, elec_pos_file, contact_name, filena
         contact_xy = contacts.xyz[contact_ind][slice_dims]
         contact_z = contacts.xyz[contact_ind][slice_param]
 
-        t1_img_data, t1_img_extent = get_slice(t1_img, slice_type, contact_z)
-        plt.imshow(t1_img_data, extent=t1_img_extent,
-                   vmin=t1_lims[0], vmax=t1_lims[1],
-                   cmap='Greys_r', origin='lower', zorder=0)
+        # Alpha colormap
+        cmap = plt.cm.hot
+        alpha_cmap = cmap(np.arange(cmap.N))
+        alpha_cmap[:,-1] = np.linspace(0, 1, cmap.N)
+        alpha_cmap = matplotlib.colors.ListedColormap(alpha_cmap)
 
         elec_img_data, elec_img_extent = get_slice(elec_img, slice_type, contact_z)
         plt.imshow(elec_img_data, extent=elec_img_extent,
                    vmin=elec_lims[0], vmax=elec_lims[1],
-                   cmap='hot', origin='lower', zorder=1, alpha=0.6)
+                   cmap='hot',
+                   origin='lower', zorder=0)
+
+        t1_img_data, t1_img_extent = get_slice(t1_img, slice_type, contact_z)
+        plt.imshow(t1_img_data, extent=t1_img_extent,
+                   vmin=t1_lims[0], vmax=t1_lims[1],
+                   cmap='Greys_r', origin='lower', zorder=1, alpha=0.5)
+
 
         plt.scatter([contact_xy[1]], [contact_xy[0]], facecolors='none', edgecolors='g',
-                    s=60, zorder=2)
+                    s=80, zorder=2)
 
         for ind in elec_inds:
             if ind == contact_ind:
