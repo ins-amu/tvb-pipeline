@@ -36,7 +36,7 @@ here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 export PYTHONPATH:=$(here):$(PYTHONPATH)
 # }}}
 
-.PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
+.PHONY: fs-recon resamp-anat dwi seeg tvb clean mrinfo # {{{
 default:
 	echo "please read Makefile to use correctly"
 fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
@@ -45,7 +45,7 @@ tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
 labeled_elec: $(sd)/seeg/labeled_$(elec_mode).nii.gz
 seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain_dipole_no-subcort.mat $(sd)/seeg/gain_inv-square.mat $(sd)/seeg/seeg.png
-tvb: $(sd)/tvb/connectivity.zip
+tvb: $(sd)/tvb/connectivity.zip $(sd)/tvb/img/connectivity.png
 
 mrinfo:
 	echo $(SUBJECT)

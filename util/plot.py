@@ -201,6 +201,40 @@ def plot_t1_plus_elecs(t1_img_file, elec_img_file, elec_pos_file, out_direc):
         plot_t1_elec(t1_img_file, elec_img_file, elec_pos_file, contact_name, filename)
 
 
+def plot_connectivity(tvbzip_file, out_img_file):
+    from matplotlib.colors import LogNorm
+
+    with zipfile.ZipFile(tvbzip_file) as tvbzip:
+        with tvbzip.open("weights.txt") as weights_file:
+            weights = np.genfromtxt(weights_file)
+        with tvbzip.open("tract_lengths.txt") as lengths_file:
+            lengths = np.genfromtxt(lengths_file)
+        with tvbzip.open("centres.txt") as centres_file:
+            names = np.genfromtxt(centres_file, usecols=(0,), dtype=str)
+
+    nreg = len(names)
+
+    plt.figure(figsize=(24, 12))
+
+    plt.subplot(1, 2, 1)
+    plt.title("Weights")
+    plt.imshow(weights, cmap=plt.cm.gray_r, norm=LogNorm(1e-5*np.max(weights), np.max(weights)))
+    plt.xticks(np.r_[:nreg], names, rotation='vertical', fontsize=8)
+    plt.yticks(np.r_[:nreg], names, fontsize=8)
+    plt.colorbar()
+
+    plt.subplot(1, 2, 2)
+    plt.title("Lengths")
+    plt.imshow(lengths)
+    plt.xticks(np.r_[:nreg], names, rotation='vertical', fontsize=8)
+    plt.yticks(np.r_[:nreg], names, fontsize=8)
+    plt.colorbar()
+
+    plt.tight_layout()
+    plt.savefig(out_img_file)
+    plt.close()
+
+
 
 if __name__ == '__main__':
     import sys
