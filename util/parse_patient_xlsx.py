@@ -37,8 +37,8 @@ def expand_channels(ch_list):
 
     new_list = []
     for string in ch_list:
-
-        print(string)
+        if not string.strip():
+            continue
 
         # A'1
         match = re.match("^([A-Za-z]+[']*)([0-9]+)$", string)
@@ -48,7 +48,6 @@ def expand_channels(ch_list):
 
         # A'1-10
         match = re.match("^([A-Za-z]+[']*)([0-9]+)-([0-9]+)$", string)
-        print(match)
         if match:
             name, fst_idx, last_idx = match.groups()
             new_list.extend([name + str(i) for i in range(int(fst_idx), int(last_idx) + 1)])
@@ -82,12 +81,12 @@ def gen_sidecar_files(xlsx_file, output_direc, convert_format=None):
             if pd.isna(bad_channels) or bad_channels == 0:
                 bad_channels = []
             else:
-                bad_channels = expand_channels([a.strip() for a in bad_channels.split(",")])
+                bad_channels = expand_channels([a.strip() for a in re.split("[,;.]", bad_channels)])
 
             filename = row['File']
             if convert_format is not None:
                 root, ext = os.path.splitext(filename)
-                if ext in convert_format:
+                if ext.lower() in convert_format:
                     filename = root + convert_format[ext]
 
             data = {
@@ -111,4 +110,4 @@ def gen_sidecar_files(xlsx_file, output_direc, convert_format=None):
 
 
 if __name__ == '__main__':
-    gen_sidecar_files(sys.argv[1], sys.argv[2], {'.EEG': '.raw.fif', '.eeg': '.raw.fif'})
+    gen_sidecar_files(sys.argv[1], sys.argv[2], {'.eeg': '.raw.fif'})

@@ -24,7 +24,7 @@ CT ?= $(data)/$(SUBJECT)/elec/CT.nii.gz
 ELEC ?= $(data)/$(SUBJECT)/elec/elec_ct.nii.gz
 ELEC_POS_GARDEL ?= $(data)/$(SUBJECT)/elec/pos_vox.txt
 SEEGRECDIR ?= $(data)/$(SUBJECT)/seeg
-XLSX ?= $(data)/patient.xlsx
+XLSX ?= $(data)/$(SUBJECT)/patient.xlsx
 # }}}
 
 # misc util {{{

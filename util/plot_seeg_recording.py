@@ -19,7 +19,7 @@ import json
 def pow10floor(x):
     return 10**floor(log10(x))
 
-def plot_traces(seeg, filename, representation='monopolar', interval=(None, None)):
+def plot_traces(seeg, filename, representation='monopolar', interval=(None, None), seizure=(None, None)):
     matplotlib.rcParams.update({'font.size': 24, 'font.family': 'monospace'})
 
     plt.figure(figsize=(48, 48))
@@ -53,6 +53,11 @@ def plot_traces(seeg, filename, representation='monopolar', interval=(None, None
         plt.plot(time, 3*data[nchannels - i - 1, :] + i, 'b', lw=0.4)
     plt.yticks(np.r_[:nchannels], reversed(["%-9s" % name for name in names]))
 
+    if seizure[0] is not None:
+        plt.axvline(seizure[0], color='r')
+    if seizure[1] is not None:
+        plt.axvline(seizure[1], color='r')
+
     plt.gca().xaxis.set_tick_params(labeltop='on')
 
     plt.xlabel("t [s]")
@@ -60,7 +65,7 @@ def plot_traces(seeg, filename, representation='monopolar', interval=(None, None
     plt.savefig(filename)
     plt.close()
 
-def plot_spectrogram(seeg, filename, representation='monopolar', interval=(None, None)):
+def plot_spectrogram(seeg, filename, representation='monopolar', interval=(None, None), seizure=(None, None)):
     matplotlib.rcParams.update({'font.size': 14, 'font.family': 'monospace'})
 
     if representation in ['monopolar', 'avgref']:
@@ -112,6 +117,11 @@ def plot_spectrogram(seeg, filename, representation='monopolar', interval=(None,
             ax.set_ylabel("f [Hz]")
             ax.set_title(ch_names[ind])
 
+            if seizure[0] is not None:
+                plt.axvline(seizure[0], color='r', lw=0.5)
+            if seizure[1] is not None:
+                plt.axvline(seizure[1], color='r', lw=0.5)
+
     for cax in caxs:
         vmax = pow10floor(maxval)
         vmin = vmax*1e-4
@@ -131,10 +141,9 @@ def process_seizure(name, seeg, interval, out_dir):
 
 
 
-
-
 def plot_seeg_recording(jsonname, representation, imgname):
-    TEMPORAL_MARGIN = 20
+    TEMPORAL_MARGIN = 50
+    SPECTROGRAM_SIZE_LIM = 600
 
     with open(jsonname, 'r') as fl:
         metadata = json.load(fl)
@@ -143,21 +152,20 @@ def plot_seeg_recording(jsonname, representation, imgname):
 
     ext = os.path.splitext(filename)[1].lower()
     if ext == ".fif":
-        onset, termination = metadata['onset'], metadata['termination']
-        if onset is not None:
-            onset = onset - TEMPORAL_MARGIN
-        if termination is not None:
-            termination = termination + TEMPORAL_MARGIN
+        interval = metadata['onset'], metadata['termination']
+        trim_interval = (interval[0] - TEMPORAL_MARGIN if interval[0] is not None else None,
+                         interval[1] + TEMPORAL_MARGIN if interval[1] is not None else None)
 
         seeg = SeegRecording.from_fif(filename, drop_channels=metadata['bad_channels'])
-        seeg.trim(interval=(onset, termination))
+        seeg.trim(interval=trim_interval)
     else:
         raise ValueError("Unexpected file format %s" % ext)
 
     if representation in ['avgref', 'bipolar']:
-        plot_traces(seeg, imgname, representation=representation)
+        plot_traces(seeg, imgname, representation=representation, seizure=interval)
     elif representation == 'spectrogram':
-        plot_spectrogram(seeg, imgname, 'avgref')
+        if seeg.t[-1] - seeg.t[0] < SPECTROGRAM_SIZE_LIM:
+            plot_spectrogram(seeg, imgname, 'avgref', seizure=interval)
     else:
         raise ValueError("Unexpected representation '%s'" % representation)
 

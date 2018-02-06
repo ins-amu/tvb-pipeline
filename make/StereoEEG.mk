@@ -77,20 +77,20 @@ $(sd)/elec/img: $(sd)/tvb/connectivity.zip $(sd)/elec/seeg.xyz $(sd)/mri/T1.RAS.
 
 
 # SEEG recordings -------------------------------------------------------------------- #
-.PHONY: seegrec
-seegrec: $(sd)/seegrec/fif $(sd)/seegrec/img
+.PHONY: seeg
+seeg: $(sd)/seeg/fif $(sd)/seeg/img
 
-$(sd)/seegrec/fif: $(XLSX) $(SEEGRECDIR)
+$(sd)/seeg/fif: $(XLSX) $(SEEGRECDIR)
 	mkdir -p $@
-	python $(here)/util/parse_patient_xlsx.py $(XLSX) $(sd)/seegrec/fif/
-	for i in `find $(SEEGRECDIR) -maxdepth 1 -name '*.eeg'`; do \
+	python $(here)/util/parse_patient_xlsx.py $(XLSX) $(sd)/seeg/fif/
+	for i in `find $(SEEGRECDIR) -maxdepth 1 -iname '*.eeg'`; do \
 		trg=$@/`basename "$${i%.*}"`.raw.fif; \
 		python $(here)/util/read_eeg.py $$i $$trg; \
 	done;
 
-$(sd)/seegrec/img: $(sd)/seegrec/fif
+$(sd)/seeg/img: $(sd)/seeg/fif
 	mkdir -p $@
-	for i in `ls $(sd)/seegrec/fif/*.json`; do \
+	for i in `ls $(sd)/seeg/fif/*.json`; do \
 		trg=$@/`basename $$i .json`; \
 		python $(here)/util/plot_seeg_recording.py $$i avgref $${trg}.avgref.png; \
 		python $(here)/util/plot_seeg_recording.py $$i bipolar $${trg}.bipolar.png; \
