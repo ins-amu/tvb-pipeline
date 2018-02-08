@@ -44,12 +44,19 @@ $(sd)/dwi/mask.mif: $(sd)/dwi/preproc.mif
 $(sd)/dwi/fod.mif: $(sd)/dwi/preproc.mif $(sd)/dwi/response.txt
 	dwi2fod csd $^ $@ -force -nthreads $(nthread) $(dwi_log)
 
-# convert FS labels to connectivity labels
+# convert FS labels to connectivity labels in DWI space
 $(sd)/dwi/label.mif: $(sd)/dwi/aparc_aseg.nii.gz
 	labelconvert $< \
 	    $(lut_fs) \
 	    $(lut_target) \
 	    $@ -force $(dwi_log)
+
+# convert FS labels to connectivity labels in T1 space
+$(sd)/dwi/label_in_T1.nii.gz: $(sd)/mri/$(aa).RAS.RO.nii.gz
+	labelconvert $< \
+		$(lut_fs) \
+		$(lut_target) \
+		$@ -force $(dwi_log)
 
 # generate all tracks
 $(sd)/dwi/all.tck: $(sd)/dwi/fod.mif $(sd)/dwi/mask.mif
@@ -63,11 +70,11 @@ $(sd)/dwi/100k.tck: $(sd)/dwi/all.tck
 	tckedit -number 100K $< $@ $(dwi_log)
 
 # generate track counts for connectome
-$(sd)/dwi/triu_counts.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
+$(sd)/dwi/triu_counts.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif
 	tck2connectome $^ $@ -force -nthreads $(nthread) $(dwi_log)
 
 # generate track average lengths for connectome
-$(sd)/dwi/triu_lengths.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif 
+$(sd)/dwi/triu_lengths.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif
 	tck2connectome $^ $@ -scale_length -stat_edge mean -force -nthreads $(nthread) $(dwi_log)
 
 # convert to non-triangular, normalize, etc TODO

@@ -40,3 +40,19 @@ $(sd)/tvb/img/connectivity.png: $(sd)/tvb/connectivity.zip
 	python -m util.plot plot_connectivity $< $@
 
 # }}}
+
+
+# EZ hypothesis {{{
+$(sd)/tvb/ez_hypothesis.txt: $(XLSX) $(sd)/tvb/connectivity.zip $(sd)/elec/seeg.xyz $(sd)/dwi/label_in_T1.nii.gz
+	python -m util.parse_patient_xlsx save_ez_hypothesis \
+		$(XLSX) $(sd)/tvb/connectivity.zip \
+		$(sd)/elec/seeg.xyz $(sd)/dwi/label_in_T1.nii.gz \
+		$@
+
+$(sd)/tvb/img/ez_hypothesis.png: $(sd)/tvb/ez_hypothesis.txt $(sd)/tvb/connectivity.zip $(sd)/dwi/label_in_T1.nii.gz $(sd)/mri/T1.RAS.nii.gz
+	mkdir -p $(sd)/tvb/img
+	python -m util.plot plot_ez_hypothesis \
+		$(sd)/tvb/ez_hypothesis.txt $(sd)/tvb/connectivity.zip \
+		$(sd)/dwi/label_in_T1.nii.gz $(sd)/mri/T1.RAS.nii.gz \
+		$@
+# }}}

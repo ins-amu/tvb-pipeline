@@ -47,6 +47,7 @@ conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
 labeled_elec: $(sd)/elec/labeled_$(elec_mode).nii.gz
 elec: $(sd)/elec/seeg.xyz $(sd)/elec/gain_dipole_no-subcort.mat $(sd)/elec/gain_inv-square.mat $(sd)/elec/img
 tvb: $(sd)/tvb/connectivity.zip $(sd)/tvb/img/connectivity.png
+ez: $(sd)/tvb/ez_hypothesis.txt $(sd)/tvb/img/ez_hypothesis.png
 
 mrinfo:
 	echo $(SUBJECT)

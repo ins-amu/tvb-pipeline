@@ -15,6 +15,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+from nifti import gen_volume_regions
+
+
 class NamedPoints():
     def __init__(self, fl):
         data = np.genfromtxt(fl, dtype=None)
@@ -238,6 +241,60 @@ def plot_connectivity(tvbzip_file, out_img_file):
     plt.yticks(np.r_[:nreg], names, fontsize=8)
     plt.colorbar()
 
+    plt.tight_layout()
+    plt.savefig(out_img_file)
+    plt.close()
+
+
+def plot_ez_hypothesis(ez_hyp_file, tvb_zipfile, label_volume_file, t1_volume_file, out_img_file):
+    label_vol = nib.load(label_volume_file)
+    t1_vol = nib.load(t1_volume_file)
+    ez_hyp_vector = np.genfromtxt(ez_hyp_file, dtype=int)
+    ez_hyp_vol = nib.Nifti1Image(gen_volume_regions(ez_hyp_vector, label_vol),
+                                 label_vol.affine)
+
+    with zipfile.ZipFile(tvb_zipfile) as zf:
+        with zf.open("centres.txt") as fl:
+            region_names = np.genfromtxt(fl, usecols=(0,), dtype=str)
+    ez_region_names = region_names[ez_hyp_vector == 1]
+
+
+    lims = (np.dot(t1_vol.affine, [0, 0, 0, 1])[2],
+            np.dot(t1_vol.affine, np.append(t1_vol.shape, 1))[2])
+
+    t1_lims = np.min(t1_vol.get_data()), np.max(t1_vol.get_data())
+
+    nrows = 5
+    ncols = 6
+
+    # Restrict the range a little bit
+    # TODO: more rigorously? Or not at all?
+    lims = (lims[0] + 0.2 * (lims[1] - lims[0]), lims[1] - 0.2 * (lims[1] - lims[0]))
+    delta = (lims[1] - lims[0])/(nrows*ncols)
+
+    plt.figure(figsize=(20, 20))
+
+    for i in range(nrows * ncols):
+        ax = plt.subplot(nrows + 1, ncols, ncols + i + 1)
+        infsup_coord = lims[1] - i*delta
+
+        img_data, img_extent = get_slice(t1_vol, 'transversal', infsup_coord)
+        plt.imshow(img_data, extent=img_extent,
+                   vmin=t1_lims[0], vmax=t1_lims[1], cmap='Greys_r', origin='lower', zorder=1)
+
+        try:
+            img_data, img_extent = get_slice(ez_hyp_vol, 'transversal', infsup_coord)
+            plt.imshow(img_data, extent=img_extent,
+                       vmin=0, vmax=1, cmap='bwr', origin='lower', zorder=2, alpha=0.5)
+        except IndexError:
+            pass
+
+        plt.title("%.1f" % infsup_coord)
+        plt.xlabel("L --- R")
+        plt.ylabel("P --- A")
+
+    plt.suptitle("Epileptogenic zone hypothesis", fontsize=20)
+    plt.figtext(0.5, .92, "EZ: %s" % ", ".join(ez_region_names), fontsize=14, ha='center', wrap=True)
     plt.tight_layout()
     plt.savefig(out_img_file)
     plt.close()

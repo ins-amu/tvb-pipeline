@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 
+
 import json
+import logging
 import os
 import re
 import sys
+import zipfile
 
+import nibabel as nib
+import numpy as np
 import pandas as pd
 
+from elecs import Contacts
+import nifti
 
 def get_sec(time_str):
     if type(time_str) == float:
@@ -66,7 +73,9 @@ def expand_channels(ch_list):
     return new_list
 
 
-def gen_sidecar_files(xlsx_file, output_direc, convert_format=None):
+def gen_sidecar_files(xlsx_file, output_direc):
+    convert_format = {'.eeg': '.raw.fif'}
+
     df = pd.read_excel(xlsx_file, sheet_name="Recordings")
     add_same_occurence_index(df, 'File')
 
@@ -109,5 +118,81 @@ def gen_sidecar_files(xlsx_file, output_direc, convert_format=None):
                 json.dump(data, outfile, indent=4)
 
 
+def get_ez_from_regions(xlsx_file, region_names):
+    """Return list of indices of EZ regions given in the patient spreadsheet"""
+
+    LH_NAMES_IND = 9
+    LH_EZ_IND = 10
+    RH_NAMES_IND = 12
+    RH_EZ_IND = 13
+
+    df = pd.read_excel(xlsx_file, sheet_name="EZ hypothesis and EI", header=1)
+
+    ez_names = []
+    for names_ind, ez_ind in [(LH_NAMES_IND, LH_EZ_IND), (RH_NAMES_IND, RH_EZ_IND)]:
+        names_col = df.iloc[:, names_ind]
+        mask = names_col.notnull()
+        names = names_col[mask]
+        ez_mask = df.iloc[:, ez_ind][mask] == 'YES'
+        ez_names.extend(names[ez_mask])
+
+    return [region_names.index(name) for name in ez_names]
+
+
+def get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file):
+    """Return list of indices of EZ regions given by the EZ contacts in the patient spreadsheet"""
+
+    CONTACTS_IND = 6
+    EZ_IND = 7
+
+    df = pd.read_excel(xlsx_file, sheet_name="EZ hypothesis and EI", header=1)
+
+    ez_contacts = []
+    contacts_col = df.iloc[:, CONTACTS_IND]
+    mask = contacts_col.notnull()
+    contacts_names = contacts_col[mask]
+    ez_mask = df.iloc[:, EZ_IND][mask] == 'YES'
+    ez_contacts.extend(contacts_names[ez_mask])
+
+    contacts = Contacts(contacts_file)
+    label_vol = nib.load(label_volume_file)
+
+    ez_inds = []
+    for contact in ez_contacts:
+        coords = contacts.get_coords(contact)
+        region_ind = nifti.point_to_brain_region(coords, label_vol, tol=3.0) - 1   # Minus one to account for the shift
+        if region_ind != -1:
+            ez_inds.append(region_ind)
+
+    return ez_inds
+
+
+
+def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file, output_file):
+    """Extract the EZ hypothesis from the xlsx file and save it to plain text file"""
+
+    with zipfile.ZipFile(tvb_zipfile) as zf:
+        with zf.open("centres.txt") as fl:
+            region_names = list(np.genfromtxt(fl, usecols=(0,), dtype=str))
+
+    nreg = len(region_names)
+
+    ez_inds_from_regions = get_ez_from_regions(xlsx_file, region_names)
+    ez_inds_from_contacts = get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file)
+    ez_inds = list(set(ez_inds_from_regions + ez_inds_from_contacts))
+    print(ez_inds)
+
+    ez_hyp = np.zeros(nreg, dtype=int)
+    ez_hyp[ez_inds] = 1
+
+    np.savetxt(output_file, ez_hyp, fmt='%i')
+
+
+
 if __name__ == '__main__':
-    gen_sidecar_files(sys.argv[1], sys.argv[2], {'.eeg': '.raw.fif'})
+    loglevel = logging.INFO
+    if os.environ.get('VERBOSE', False):
+        loglevel = logging.DEBUG
+    logging.basicConfig(level=loglevel)
+    cmd = sys.argv[1]
+    eval(cmd)(*sys.argv[2:])
