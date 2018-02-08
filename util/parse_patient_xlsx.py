@@ -95,7 +95,8 @@ def gen_sidecar_files(xlsx_file, output_direc):
             filename = row['File']
             if convert_format is not None:
                 root, ext = os.path.splitext(filename)
-                if ext.lower() in convert_format:
+                ext = ext.lower()
+                if ext in convert_format:
                     filename = root + convert_format[ext]
 
             data = {
