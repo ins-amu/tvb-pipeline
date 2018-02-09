@@ -15,7 +15,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from nifti import gen_volume_regions
+from .nifti import gen_volume_regions
 
 
 class NamedPoints():

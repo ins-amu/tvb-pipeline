@@ -82,18 +82,18 @@ seeg: $(sd)/seeg/fif $(sd)/seeg/img
 
 $(sd)/seeg/fif: $(XLSX) $(SEEGRECDIR)
 	mkdir -p $@
-	python $(here)/util/parse_patient_xlsx.py $(XLSX) $(sd)/seeg/fif/
+	python -m util.parse_patient_xlsx  gen_sidecar_files $(XLSX) $(sd)/seeg/fif/
 	for i in `find $(SEEGRECDIR) -maxdepth 1 -iname '*.eeg'`; do \
 		trg=$@/`basename "$${i%.*}"`.raw.fif; \
-		python $(here)/util/read_eeg.py $$i $$trg; \
+		python -m util.read_eeg $$i $$trg; \
 	done;
 
 $(sd)/seeg/img: $(sd)/seeg/fif
 	mkdir -p $@
 	for i in `ls $(sd)/seeg/fif/*.json`; do \
 		trg=$@/`basename $$i .json`; \
-		python $(here)/util/plot_seeg_recording.py $$i avgref $${trg}.avgref.png; \
-		python $(here)/util/plot_seeg_recording.py $$i bipolar $${trg}.bipolar.png; \
-		python $(here)/util/plot_seeg_recording.py $$i spectrogram $${trg}.spectrogram.png; \
+		python -m util.plot_seeg_recording $$i avgref $${trg}.avgref.png; \
+		python -m util.plot_seeg_recording $$i bipolar $${trg}.bipolar.png; \
+		python -m util.plot_seeg_recording $$i spectrogram $${trg}.spectrogram.png; \
 	done;
 # ------------------------------------------------------------------------------------ #

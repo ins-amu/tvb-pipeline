@@ -12,8 +12,8 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 
-from elecs import Contacts
-import nifti
+from .elecs import Contacts
+from . import nifti
 
 def get_sec(time_str):
     if type(time_str) == float:
@@ -134,7 +134,7 @@ def get_ez_from_regions(xlsx_file, region_names):
         names_col = df.iloc[:, names_ind]
         mask = names_col.notnull()
         names = names_col[mask]
-        ez_mask = df.iloc[:, ez_ind][mask] == 'YES'
+        ez_mask = df.iloc[:, ez_ind][mask].astype(str) == 'YES'
         ez_names.extend(names[ez_mask])
 
     return [region_names.index(name) for name in ez_names]
@@ -181,7 +181,6 @@ def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file,
     ez_inds_from_regions = get_ez_from_regions(xlsx_file, region_names)
     ez_inds_from_contacts = get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file)
     ez_inds = list(set(ez_inds_from_regions + ez_inds_from_contacts))
-    print(ez_inds)
 
     ez_hyp = np.zeros(nreg, dtype=int)
     ez_hyp[ez_inds] = 1
