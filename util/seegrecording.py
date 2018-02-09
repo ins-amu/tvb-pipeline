@@ -159,7 +159,7 @@ class SeegRecording():
                 tid1 = np.argmax(self.t >= interval[0])
         if interval[1] is not None:
             if interval[1] > self.t[-1]:
-                return -1
+                tid2 = -1
             else:
                 tid2 = np.argmax(self.t >= interval[1])
 
