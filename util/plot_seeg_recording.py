@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 
-from seegrecording import SeegRecording
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -16,6 +14,7 @@ import mne
 import glob
 import json
 
+from .seegrecording import SeegRecording
 
 def pow10floor(x):
     return 10**floor(log10(x))
