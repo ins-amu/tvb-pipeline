@@ -92,7 +92,7 @@ def gen_sidecar_files(xlsx_file, output_direc):
             else:
                 bad_channels = expand_channels([a.strip() for a in re.split("[,;.]", bad_channels)])
 
-            filename = row['File']
+            filename = row['File'].strip()
             if convert_format is not None:
                 root, ext = os.path.splitext(filename)
                 ext = ext.lower()
