@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 
+import datetime
 import json
 import logging
 import os
@@ -15,13 +16,21 @@ import pandas as pd
 from .elecs import Contacts
 from . import nifti
 
-def get_sec(time_str):
-    if type(time_str) == float:
+def get_sec(time):
+    if type(time) == float:
         # Already in seconds
-        return time_str
+        return time
+    elif type(time) == datetime.time:
+        return datetime.timedelta(hours=time.hour,
+                                 minutes=time.minute,
+                                 seconds=time.second,
+                                 microseconds=time.microsecond).total_seconds()
+    elif type(time) == str:
+        h, m, s = time_str.split(':')
+        return int(h)*3600 + int(m)*60 + float(s)
+    else:
+        raise ValueError("Unexpected time type: %s" % type(time))
 
-    h, m, s = time_str.split(':')
-    return int(h)*3600 + int(m)*60 + float(s)
 
 
 def add_same_occurence_index(df, column):
