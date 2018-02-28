@@ -3,7 +3,7 @@ stages:
   - info
   
 before_script:
-  - source /soft/miniconda3/active
+  - source /soft/miniconda3/activate
 
 info:
   stage: info
