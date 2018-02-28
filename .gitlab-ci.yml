@@ -11,8 +11,6 @@ info:
     - which pip
     - which make
     - echo $PYTHONPATH
-  tags:
-    - compute
 
 # only vep tag ensures access to patient data
 check_perm_vep:
@@ -27,5 +25,3 @@ check_perm_compute:
   stage: info
   script:
     - bash -c '[ ! $(ls /home/vep/Pipeline/* > /dev/null) ]'
-  tags:
-    - compute
