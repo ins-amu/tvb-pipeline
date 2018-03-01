@@ -88,9 +88,8 @@ def compute_vertex_areas(vertices, triangles):
 
 
 def read_surf(directory: os.PathLike, use_subcort):
-    # Shift to account for 0 - unknown region, not included later
-    reg_map_cort = np.genfromtxt((os.path.join(directory, "region_mapping_cort.txt")), dtype=int) - 1
-    reg_map_subc = np.genfromtxt((os.path.join(directory, "region_mapping_subcort.txt")), dtype=int) - 1
+    reg_map_cort = np.genfromtxt((os.path.join(directory, "region_mapping_cort.txt")), dtype=int)
+    reg_map_subc = np.genfromtxt((os.path.join(directory, "region_mapping_subcort.txt")), dtype=int)
 
     with zipfile.ZipFile(os.path.join(directory, "surface_cort.zip")) as zip:
         with zip.open('vertices.txt') as fhandle:

@@ -6,6 +6,7 @@ import numpy as np
 import itertools
 import csv
 
+import nibabel as nb
 
 def cores():
     import multiprocessing
@@ -42,7 +43,6 @@ def build_fs_label_name_map(lut_path):
 
 
 def label_volume_centers(label_volume, output_tsv):
-    import nibabel as nb
     log = logging.getLogger('label_volume_centers')
 
     log.info('reading %r', label_volume)
@@ -63,7 +63,6 @@ def label_volume_centers(label_volume, output_tsv):
 
 
 def label_with_dilation(masked_CT_fname, dilated_CT_fname, label_CT_fname):
-    import nibabel as nb
     import scipy.ndimage
     log = logging.getLogger('label_with_dilation')
     log.info('reading mask %r', masked_CT_fname)
@@ -119,7 +118,6 @@ def periodic_xyz_for_object(lab, val, aff, bw=0.1, doplot=False):
 
 
 def gen_seeg_xyz(labeled_CT_fname, schema_fname, seeg_xyz_fname):
-    import nibabel as nb
     label_to_name = {}
     with open(schema_fname, "r") as fd:
         for line in fd.readlines():
@@ -229,6 +227,30 @@ def gen_seeg_xyz_from_endpoints(scheme_fname, out_fname, transform_mat=None,
     infile.close()
     outfile.close()
 
+
+def transform_gardel_coords_to_tvb(gardel_file, src_img_file, target_img_file, transform_mat, tvb_coords_file):
+    orig_coords = np.genfromtxt(gardel_file, names=True,
+                                dtype=None,
+                                usecols=(0, 1, 2, 3, 4))
+
+    names = [name.decode('UTF-8') + str(ind) for name, ind in zip(orig_coords['Electrode'], orig_coords['Contact'])]
+    nsensors = len(names)
+
+    src_img = nb.load(src_img_file)
+
+    target_coords = np.zeros((nsensors, 3))
+    for i in range(nsensors):
+        vox_src = [orig_coords[i]['x'], orig_coords[i]['y'], orig_coords[i]['z']]
+        ras_src = np.dot(src_img.affine, vox_src + [1])[0:3]
+        target_coords[i, :] = transform(ras_src, src_img_file, target_img_file, transform_mat)
+
+    with open(tvb_coords_file, 'w') as fl:
+        for i in range(nsensors):
+            fl.write("%-6s %7.2f %7.2f %7.2f\n" % (names[i],
+                                                   target_coords[i, 0], target_coords[i, 1], target_coords[i, 2]))
+
+
+
 def seeg_gain(seeg_xyz_fname, aa_xyz_fname, gain_mat_fname):
     # NB this is only a pseudo gain matrix
     seeg_xyz = np.loadtxt(seeg_xyz_fname, usecols=(1,2,3))  # (n, 3)
@@ -252,7 +274,6 @@ def _label_objects_one(args):
 
 
 def label_objects(masked_fname, labeled_fname, *args):
-    import nibabel as nb
     import scipy.ndimage
     import multiprocessing
     nii = nb.load(masked_fname)

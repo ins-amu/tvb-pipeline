@@ -1,14 +1,14 @@
 # default parameters {{{
 sval ?= pial
 pe_dir ?= AP
-regopts ?= -cost mutualinfo -dof 12 -searchrz -180 180 -searchry -180 180  -searchrx -180 180 
+regopts ?= -cost mutualinfo -dof 12 -searchrz -180 180 -searchry -180 180  -searchrx -180 180
 ntrack ?= 15M
 ct_thresh ?= 1000
 nthread ?= 8
 parc ?= aparc.a2009s
 aa ?= aparc+aseg
 resamp_target ?= fsaverage5
-elec_mode ?= CT
+elec_mode ?= ELEC
 lut_fs := $(FREESURFER_HOME)/FreeSurferColorLUT.txt
 lut_target ?= $(shell find $(MRT3) -name fs_default.txt | head -n 1)
 ifneq ($(and $(BVECS),$(BVALS)),)
@@ -18,10 +18,13 @@ endif
 
 # default data layout {{{
 data ?= data
-T1 ?= $(data)/$(SUBJECT)/T1.nii.gz
-DWI ?= $(data)/$(SUBJECT)/DWI.mif
-CT ?= $(data)/$(SUBJECT)/CT.nii.gz
-ELEC ?= $(data)/$(SUBJECT)/ELEC.nii.gz
+T1 ?= $(data)/$(SUBJECT)/t1/
+DWI ?= $(data)/$(SUBJECT)/dwi/
+CT ?= $(data)/$(SUBJECT)/elec/CT.nii.gz
+ELEC ?= $(data)/$(SUBJECT)/elec/elec_ct.nii.gz
+ELEC_POS_GARDEL ?= $(data)/$(SUBJECT)/elec/pos_vox.txt
+SEEGRECDIR ?= $(data)/$(SUBJECT)/seeg
+XLSX ?= $(data)/$(SUBJECT)/patient.xlsx
 # }}}
 
 # misc util {{{
@@ -34,16 +37,17 @@ here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 export PYTHONPATH:=$(here):$(PYTHONPATH)
 # }}}
 
-.PHONY: fs-recon resamp-anat dwi seeg clean mrinfo # {{{
+.PHONY: fs-recon resamp-anat dwi seeg tvb clean mrinfo # {{{
 default:
 	echo "please read Makefile to use correctly"
 fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
 resamp-anat: $(sd)/surf/lh.$(sval).$(resamp_target) $(sd)/surf/rh.$(sval).$(resamp_target)
 tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
-labeled_elec: $(sd)/seeg/labeled_$(elec_mode).nii.gz
-seeg: $(sd)/seeg/seeg.xyz $(sd)/seeg/gain_dipole_no-subcort.mat $(sd)/seeg/gain_inv-square.mat $(sd)/seeg/seeg.png
-tvb: $(sd)/tvb/connectivity.zip
+labeled_elec: $(sd)/elec/labeled_$(elec_mode).nii.gz
+elec: $(sd)/elec/seeg.xyz $(sd)/elec/gain_dipole_no-subcort.mat $(sd)/elec/gain_inv-square.mat $(sd)/elec/img
+tvb: $(sd)/tvb/connectivity.zip $(sd)/tvb/img/connectivity.png
+ez: $(sd)/tvb/ez_hypothesis.txt $(sd)/tvb/img/ez_hypothesis.png
 
 mrinfo:
 	echo $(SUBJECT)

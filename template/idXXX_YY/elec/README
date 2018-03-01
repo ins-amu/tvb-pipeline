@@ -1,0 +1,6 @@
+Here you should place:
+- T1 or CT scan in NIFTI format (*.nii, *.nii.gz) with implanted electrodes.
+
+And one of the following:
+- A text file specifying the endpoints and spacing of the electrodes (elec_endpoints.txt)
+- A text file from GARDEL specifying the contact positions in voxel coordinates of the CT/MRI scan (pos_vox.txt)

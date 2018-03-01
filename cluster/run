@@ -29,24 +29,27 @@ function runSubject {
     fi
 
     mkdir -p $subjects_dir/_logs
-    outfile=$subjects_dir/_logs/${subject}.%jobid%.stdout
-    errfile=$subjects_dir/_logs/${subject}.%jobid%.stderr
+    outfile=$subjects_dir/_logs/${subject}.%j.stdout
+    errfile=$subjects_dir/_logs/${subject}.%j.stderr
 
-    $oarsub_common -O $outfile -E $errfile "$oar_env $run_one_path $args"
+    $submit_cmd -o $outfile -e $errfile $run_one_path $args
 }
 
 
 # abs path to cluster/run-one script, regardless of
 # working directory of invocation
 run_one_path=$(cd $(dirname $0) && pwd)/run-one
+pipeline_dir=$(cd $(dirname $0)/.. && pwd)
 
-# common args to oarsub
-oarsub_common="oarsub -l nodes=1,walltime=24:00:00 "
+# Submit using SLURM
+submit_cmd="sbatch -N 1 -n 1 --exclude=n01 --mem=60G --exclusive"
 
 # We have to pass the environment variables explicitely
 if [[ ! -z $SUBJECTS_DIR ]]
 then
-    oar_env="env SUBJECTS_DIR=$SUBJECTS_DIR"
+    submit_cmd="${submit_cmd} --export=SUBJECTS_DIR=${SUBJECTS_DIR},PIPELINE_DIR=${pipeline_dir}"
+else
+    submit_cmd="${submit_cmd} --export=PIPELINE_DIR=${pipeline_dir}"
 fi
 
 subjects_dir=${SUBJECTS_DIR:-$(pwd)/fs}
@@ -57,6 +60,7 @@ then
 else
     while read LINE
     do
+        echo $LINE
         runSubject $LINE
     done < $1
 fi
