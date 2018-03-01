@@ -26,7 +26,7 @@ def get_sec(time):
                                  seconds=time.second,
                                  microseconds=time.microsecond).total_seconds()
     elif type(time) == str:
-        h, m, s = time_str.split(':')
+        h, m, s = time.split(':')
         return int(h)*3600 + int(m)*60 + float(s)
     else:
         raise ValueError("Unexpected time type: %s" % type(time))
