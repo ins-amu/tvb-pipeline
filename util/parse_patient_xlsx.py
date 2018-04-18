@@ -15,9 +15,12 @@ import pandas as pd
 
 from .elecs import Contacts
 from . import nifti
+from . import read_eeg
 
 def get_sec(time):
-    if type(time) == float:
+    if pd.isna(time):
+        return None
+    elif type(time) == float:
         # Already in seconds
         return time
     elif type(time) == datetime.time:
@@ -82,49 +85,91 @@ def expand_channels(ch_list):
     return new_list
 
 
-def gen_sidecar_files(xlsx_file, output_direc):
-    convert_format = {'.eeg': '.raw.fif'}
+def get_bad_channels(cell_value):
+    if pd.isna(cell_value) or cell_value == 0:
+        return []
+    else:
+        return expand_channels([a.strip() for a in re.split("[,;.]", cell_value)])
 
+
+def get_converted_filename(filenames):
+    TARGET_FMT = '.raw.fif'
+
+    if type(filenames) == str:
+        filenames = [filenames]
+
+    roots = [os.path.splitext(filename.strip())[0] for filename in filenames]
+    return "_".join(roots) + TARGET_FMT
+
+
+def get_sidecar_name(filename, is_repeated, file_index):
+    known_extensions = ['.eeg', '.raw.fif']
+
+    basename = os.path.splitext(filename)[0]
+    for ext in known_extensions:
+        if filename[-len(ext):] == ext:
+            basename = filename[:-len(ext)]
+
+    if not is_repeated:
+        return basename + ".json"
+    else:
+        return basename + "_" + str(file_index) + ".json"
+
+
+def convert_recordings(xlsx_file, seeg_rec_dir, output_direc):
     df = pd.read_excel(xlsx_file, sheet_name="Recordings")
     add_same_occurence_index(df, 'File')
 
-    # TODO: check that everything is where expected
-
-    for index, row in df.iterrows():
+    iterrows = df.iterrows()
+    for index, row in iterrows:
         if pd.notna(row['File']):
-            onset = get_sec(row['Onset']) if pd.notna(row['Onset']) else None
-            termination = get_sec(row['Termination']) if pd.notna(row['Termination']) else None
+            if row['Termination'] == '>':
+                # Merge two files
+                index2, row2 = next(iterrows)
+                assert row2['Onset'] == '<'
 
-            bad_channels = row['Bad channels']
-            if pd.isna(bad_channels) or bad_channels == 0:
-                bad_channels = []
+                onset, termination = get_sec(row['Onset']), get_sec(row2['Termination'])
+                bad_channels1 = get_bad_channels(row['Bad channels'])
+                bad_channels2 = get_bad_channels(row2['Bad channels'])
+                orig_filename1 = row['File']
+                orig_filename2 = row2['File']
+                conv_filename = get_converted_filename([orig_filename1, orig_filename2])
+                jsonname = get_sidecar_name(conv_filename, False, None)
+
+                eeg1 = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename1)).to_fif()
+                eeg2 = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename2)).to_fif()
+
+                assert len(eeg1.ch_names) == len(eeg2.ch_names)
+                assert all([ch1 == ch2 for ch1, ch2 in zip(eeg1.ch_names, eeg2.ch_names)])
+                assert eeg1.info['sfreq'] == eeg2.info['sfreq']
+                assert row['Seizure type'] == row2['Seizure type']
+
+                bad_channels = sorted(list(set(bad_channels1 + bad_channels2)))
+                termination += (eeg1.n_times - 1) * (1./eeg1.info['sfreq'])
+
+                eeg1.append(eeg2)
+                eeg1.save(os.path.join(output_direc, conv_filename))
+
             else:
-                bad_channels = expand_channels([a.strip() for a in re.split("[,;.]", bad_channels)])
+                onset, termination = get_sec(row['Onset']), get_sec(row['Termination'])
+                bad_channels = get_bad_channels(row['Bad channels'])
+                orig_filename = row['File']
+                conv_filename = get_converted_filename(row['File'])
+                jsonname = get_sidecar_name(row['File'], row['_File_repeated'], row['_File_index'])
 
-            filename = row['File'].strip()
-            if convert_format is not None:
-                root, ext = os.path.splitext(filename)
-                ext = ext.lower()
-                if ext in convert_format:
-                    filename = root + convert_format[ext]
+                eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename))
+                eeg.save_to_fif(os.path.join(output_direc, conv_filename))
+
 
             data = {
-                'filename': filename,
+                'filename': conv_filename,
                 'onset': onset,
                 'termination': termination,
                 'bad_channels': bad_channels,
                 'type': row['Seizure type']
             }
 
-            basename = os.path.splitext(row['File'])[0]
-
-            if not row['_File_repeated']:
-                jsonfile = basename + ".json"
-            else:
-                jsonfile = basename + "_" + str(row['_File_index']) + ".json"
-
-            sidecar_name = os.path.join(output_direc, jsonfile)
-            with open(sidecar_name, 'w') as outfile:
+            with open(os.path.join(output_direc, jsonname), 'w') as outfile:
                 json.dump(data, outfile, indent=4)
 
 

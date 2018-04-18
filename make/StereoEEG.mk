@@ -82,11 +82,7 @@ seeg: $(sd)/seeg/fif $(sd)/seeg/img
 
 $(sd)/seeg/fif: $(XLSX) $(SEEGRECDIR)
 	mkdir -p $@
-	python -m util.parse_patient_xlsx  gen_sidecar_files $(XLSX) $(sd)/seeg/fif/
-	for i in `find $(SEEGRECDIR) -maxdepth 1 -iname '*.eeg'`; do \
-		trg=$@/`basename "$${i%.*}"`.raw.fif; \
-		python -m util.read_eeg $$i $$trg; \
-	done;
+	python -m util.parse_patient_xlsx convert_recordings $(XLSX) $(SEEGRECDIR) $(sd)/seeg/fif/
 
 $(sd)/seeg/img: $(sd)/seeg/fif
 	mkdir -p $@
