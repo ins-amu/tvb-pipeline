@@ -156,7 +156,8 @@ def plot_seeg_recording(jsonname, representation, imgname):
         trim_interval = (interval[0] - TEMPORAL_MARGIN if interval[0] is not None else None,
                          interval[1] + TEMPORAL_MARGIN if interval[1] is not None else None)
 
-        seeg = SeegRecording.from_fif(filename, drop_channels=metadata['bad_channels'])
+        seeg = SeegRecording.from_fif(filename,
+                                      drop_channels=list(set(metadata['bad_channels'] + metadata['non_seeg_channels'])))
         seeg.trim(interval=trim_interval)
     else:
         raise ValueError("Unexpected file format %s" % ext)

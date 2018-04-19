@@ -116,9 +116,11 @@ def get_sidecar_name(filename, is_repeated, file_index):
         return basename + "_" + str(file_index) + ".json"
 
 
-def convert_recordings(xlsx_file, seeg_rec_dir, output_direc):
+def convert_recordings(xlsx_file, seeg_rec_dir, contacts_file, output_direc):
     df = pd.read_excel(xlsx_file, sheet_name="Recordings")
     add_same_occurence_index(df, 'File')
+
+    contact_names = np.genfromtxt(contacts_file, usecols=(0,), dtype=str)
 
     iterrows = df.iterrows()
     for index, row in iterrows:
@@ -136,19 +138,19 @@ def convert_recordings(xlsx_file, seeg_rec_dir, output_direc):
                 conv_filename = get_converted_filename([orig_filename1, orig_filename2])
                 jsonname = get_sidecar_name(conv_filename, False, None)
 
-                eeg1 = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename1)).to_fif()
+                eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename1)).to_fif()
                 eeg2 = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename2)).to_fif()
 
-                assert len(eeg1.ch_names) == len(eeg2.ch_names)
-                assert all([ch1 == ch2 for ch1, ch2 in zip(eeg1.ch_names, eeg2.ch_names)])
-                assert eeg1.info['sfreq'] == eeg2.info['sfreq']
+                assert len(eeg.ch_names) == len(eeg2.ch_names)
+                assert all([ch1 == ch2 for ch1, ch2 in zip(eeg.ch_names, eeg2.ch_names)])
+                assert eeg.info['sfreq'] == eeg2.info['sfreq']
                 assert row['Seizure type'] == row2['Seizure type']
 
                 bad_channels = sorted(list(set(bad_channels1 + bad_channels2)))
-                termination += (eeg1.n_times - 1) * (1./eeg1.info['sfreq'])
+                termination += (eeg.n_times - 1) * (1./eeg.info['sfreq'])
 
-                eeg1.append(eeg2)
-                eeg1.save(os.path.join(output_direc, conv_filename))
+                eeg.append(eeg2)
+
 
             else:
                 onset, termination = get_sec(row['Onset']), get_sec(row['Termination'])
@@ -156,16 +158,16 @@ def convert_recordings(xlsx_file, seeg_rec_dir, output_direc):
                 orig_filename = row['File']
                 conv_filename = get_converted_filename(row['File'])
                 jsonname = get_sidecar_name(row['File'], row['_File_repeated'], row['_File_index'])
+                eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename)).to_fif()
 
-                eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename))
-                eeg.save_to_fif(os.path.join(output_direc, conv_filename))
-
+            eeg.save(os.path.join(output_direc, conv_filename))
 
             data = {
                 'filename': conv_filename,
                 'onset': onset,
                 'termination': termination,
                 'bad_channels': bad_channels,
+                'non_seeg_channels': sorted(list(set(eeg.ch_names) - set(contact_names))),
                 'type': row['Seizure type']
             }
 
