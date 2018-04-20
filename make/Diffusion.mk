@@ -16,9 +16,9 @@ $(sd)/dwi/t2d.mat: $(fs_done) $(sd)/dwi/bzero.nii.gz $(sd)/mri/T1.RAS.nii.gz
 	    $(regopts) $(dwi_log)
 
 # move label volume to DWI space
-$(sd)/dwi/aparc_aseg.nii.gz: $(sd)/dwi/t2d.mat $(sd)/mri/$(aa).RAS.RO.nii.gz
+$(sd)/dwi/aparc+aseg.%.nii.gz: $(sd)/mri/aparc+aseg.%.RAS.RO.nii.gz $(sd)/dwi/t2d.mat
 	flirt -applyxfm -interp nearestneighbour \
-	    -in $(sd)/mri/$(aa).RAS.RO.nii.gz \
+	    -in $(sd)/mri/aparc+aseg.$*.RAS.RO.nii.gz  \
 	    -ref $(sd)/dwi/bzero.nii.gz \
 	    -init $(sd)/dwi/t2d.mat -out $@ $(dwi_log)
 
@@ -45,10 +45,10 @@ $(sd)/dwi/fod.mif: $(sd)/dwi/preproc.mif $(sd)/dwi/response.txt
 	dwi2fod csd $^ $@ -force -nthreads $(nthread) $(dwi_log)
 
 # convert FS labels to connectivity labels in DWI space
-$(sd)/dwi/label.mif: $(sd)/dwi/aparc_aseg.nii.gz
+$(sd)/dwi/label.%.mif: $(sd)/dwi/aparc+aseg.%.nii.gz $(sd)/dwi/lut.%.txt
 	labelconvert $< \
 	    $(lut_fs) \
-	    $(lut_target) \
+		$(sd)/dwi/lut.$*.txt \
 	    $@ -force $(dwi_log)
 
 # convert FS labels to connectivity labels in T1 space
@@ -70,13 +70,21 @@ $(sd)/dwi/100k.tck: $(sd)/dwi/all.tck
 	tckedit -number 100K $< $@ $(dwi_log)
 
 # generate track counts for connectome
-$(sd)/dwi/triu_counts.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif
+$(sd)/dwi/triu_counts.%.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.%.mif
 	tck2connectome $^ $@ -force -nthreads $(nthread) $(dwi_log)
 
 # generate track average lengths for connectome
-$(sd)/dwi/triu_lengths.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.mif
+$(sd)/dwi/triu_lengths.%.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.%.mif
 	tck2connectome $^ $@ -scale_length -stat_edge mean -force -nthreads $(nthread) $(dwi_log)
 
 # convert to non-triangular, normalize, etc TODO
 $(sd)/dwi/%.txt: $(sd)/dwi/triu_%.txt
 	python -m util.util postprocess_connectome $< $@ $(dwi_log)
+
+
+# Atlases
+$(sd)/dwi/lut.dk.txt:
+	cp `find $(MRT3) -name fs_default.txt | head -n 1` $@ $(dwi_log)
+
+$(sd)/dwi/lut.destrieux.txt:
+	cp `find $(MRT3) -name fs_a2009s.txt | head -n 1` $@ $(dwi_log)

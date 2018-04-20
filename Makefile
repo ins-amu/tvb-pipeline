@@ -43,10 +43,10 @@ default:
 fs-recon: $(fs_done) $(sd)/mri/$(aa).xyz
 resamp-anat: $(sd)/surf/lh.$(sval).$(resamp_target) $(sd)/surf/rh.$(sval).$(resamp_target)
 tck: $(sd)/dwi/100k.tck
-conn: $(sd)/dwi/counts.txt $(sd)/dwi/lengths.txt
+conn: $(sd)/dwi/counts.dk.txt $(sd)/dwi/lengths.dk.txt
 labeled_elec: $(sd)/elec/labeled_$(elec_mode).nii.gz
 elec: $(sd)/elec/seeg.xyz $(sd)/elec/gain_dipole_no-subcort.mat $(sd)/elec/gain_inv-square.mat $(sd)/elec/img
-tvb: $(sd)/tvb/connectivity.zip $(sd)/tvb/img/connectivity.png
+tvb: $(sd)/tvb/connectivity.dk.zip $(sd)/tvb/img/connectivity.dk.png $(sd)/tvb/connectivity.destrieux.zip $(sd)/tvb/img/connectivity.destrieux.png
 ez: $(sd)/tvb/ez_hypothesis.txt $(sd)/tvb/img/ez_hypothesis.png
 
 mrinfo:

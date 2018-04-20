@@ -16,9 +16,20 @@ from zipfile import ZipFile
 
 import nibabel.freesurfer.io
 
-SUBCORTICAL_REG_INDS = [8, 10, 11, 12, 13, 16, 17, 18, 26, 47, 49, 50, 51, 52, 53, 54, 58]
-FS_LUT_LH_SHIFT = 1000
-FS_LUT_RH_SHIFT = 2000
+
+""" For each parcellation, following tuple is supplied:
+(
+  Annotation file name (without the hemisphere label),
+  Left hemisphere shift in LUT,
+  Right hemishere shift in LUT,
+  Indices of subcortical regions in the original look up table
+)
+"""
+PARCELLATIONS = {
+    'dk':        (".aparc.annot",         1000,  2000, [8, 10, 11, 12, 13, 16, 17, 18, 26, 47, 49, 50, 51, 52, 53, 54, 58]),
+    'destrieux': (".aparc.a2009s.annot", 11100, 12100, [8, 10, 11, 12, 13, 16, 17, 18, 26, 47, 49, 50, 51, 52, 53, 54, 58])
+}
+
 
 
 class StructuralDataset:
@@ -381,18 +392,32 @@ def pial_to_verts_and_triangs(pial_surf) -> (np.ndarray, np.ndarray):
     return vertices, triangles
 
 
-def read_cortical_region_mapping(label_direc: os.PathLike, hemisphere: Hemisphere, fs_to_conn: RegionIndexMapping)\
-        -> np.ndarray:
-    filename = os.path.join(label_direc, hemisphere.value + ".aparc.annot")
+
+def read_cortical_region_mapping(label_direc: os.PathLike, hemisphere: Hemisphere, fs_to_conn: RegionIndexMapping,
+                                 parcellation) -> np.ndarray:
+    """
+    Read the region mapping of a cortical surface.
+
+    When constructing the connectome, one needs to convert the FreeSurfer labels to MRtrix labels. For a volume, this
+    can be done by `labelconvert`. For the surfaces, however, we have to read the FreeSurfer annotation, and then
+    convert them to the MRtrix labels ourselves.
+
+    To make things more complicated, the annotation file does not store the region indices, so some adjustment
+    (hemisphere and parcellation dependent) is necessary. Ugh.
+    """
+
+    parc_file, lut_lh_shift, lut_rh_shift, _ = PARCELLATIONS[parcellation]
+
+    filename = os.path.join(label_direc, hemisphere.value + parc_file)
     region_mapping, _, _ = nibabel.freesurfer.io.read_annot(filename)
 
     region_mapping[region_mapping == -1] = 0   # Unknown regions in hemispheres
 
     # $FREESURFER_HOME/FreeSurferColorLUT.txt describes the shift
     if hemisphere == Hemisphere.lh:
-        region_mapping += FS_LUT_LH_SHIFT
+        region_mapping += lut_lh_shift
     else:
-        region_mapping += FS_LUT_RH_SHIFT
+        region_mapping += lut_rh_shift
 
     fs_to_conn_fun = np.vectorize(lambda n: fs_to_conn.source_to_target(n))
     region_mapping = fs_to_conn_fun(region_mapping)
@@ -401,12 +426,12 @@ def read_cortical_region_mapping(label_direc: os.PathLike, hemisphere: Hemispher
 
 
 def get_cortical_surfaces(cort_surf_direc: os.PathLike, label_direc: os.PathLike,
-                          region_index_mapping: RegionIndexMapping) -> Surface:
+                          region_index_mapping: RegionIndexMapping, parcellation: str) -> Surface:
     verts_l, triangs_l = pial_to_verts_and_triangs(os.path.join(cort_surf_direc, Hemisphere.lh.value + ".pial"))
     verts_r, triangs_r = pial_to_verts_and_triangs(os.path.join(cort_surf_direc, Hemisphere.rh.value + ".pial"))
 
-    region_mapping_l = read_cortical_region_mapping(label_direc, Hemisphere.lh, region_index_mapping)
-    region_mapping_r = read_cortical_region_mapping(label_direc, Hemisphere.rh, region_index_mapping)
+    region_mapping_l = read_cortical_region_mapping(label_direc, Hemisphere.lh, region_index_mapping, parcellation)
+    region_mapping_r = read_cortical_region_mapping(label_direc, Hemisphere.rh, region_index_mapping, parcellation)
 
     surface = merge_surfaces([Surface(verts_l, triangs_l, region_mapping_l),
                               Surface(verts_r, triangs_r, region_mapping_r)])
@@ -414,10 +439,13 @@ def get_cortical_surfaces(cort_surf_direc: os.PathLike, label_direc: os.PathLike
     return surface
 
 
-def get_subcortical_surfaces(subcort_surf_direc: os.PathLike, region_index_mapping: RegionIndexMapping) -> Surface:
+def get_subcortical_surfaces(subcort_surf_direc: os.PathLike, region_index_mapping: RegionIndexMapping,
+                             parcellation: str) -> Surface:
     surfaces = []
 
-    for fs_idx in SUBCORTICAL_REG_INDS:
+    _, _, _, subcortical_region_inds = PARCELLATIONS[parcellation]
+
+    for fs_idx in subcortical_region_inds:
         conn_idx = region_index_mapping.source_to_target(fs_idx)
         filename = os.path.join(subcort_surf_direc, 'aseg_%03d.srf' % fs_idx)
         with open(filename, 'r') as f:
@@ -495,6 +523,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
                        subcort_surf_direc: os.PathLike,
                        source_lut: os.PathLike,
                        target_lut: os.PathLike,
+                       parcellation: str,
                        weights_file: os.PathLike,
                        tract_lengths_file: os.PathLike,
                        struct_zip_file: os.PathLike,
@@ -514,6 +543,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
                        for each <NUM> in SUBCORTICAL_REG_INDS
     source_lut: File with the color look-up table used for the original parcellation
     target_lut: File with the color look-up table used for the connectome generation
+    parcellation: Parcellation type, currently either 'dk' or 'destrieux'
     weights_file: text file with weights matrix (which should be upper triangular)
     tract_lengths_file: text file with tract length matrix (which should be upper triangular)
     struct_zip_file: zip file containing TVB structural dataset to be created
@@ -527,8 +557,8 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
 
     region_index_mapping = RegionIndexMapping(source_lut, target_lut)
 
-    surf_subcort = get_subcortical_surfaces(subcort_surf_direc, region_index_mapping)
-    surf_cort = get_cortical_surfaces(cort_surf_direc, label_direc, region_index_mapping)
+    surf_subcort = get_subcortical_surfaces(subcort_surf_direc, region_index_mapping, parcellation)
+    surf_cort = get_cortical_surfaces(cort_surf_direc, label_direc, region_index_mapping, parcellation)
 
     region_params_subcort = compute_region_params(surf_subcort, True)
     region_params_cort = compute_region_params(surf_cort, False)
@@ -578,16 +608,16 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
     dataset.save_to_txt_zip(struct_zip_file)
 
     if out_surfaces_dir:
-        surf_subcort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_subcort.txt"))
+        surf_subcort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_subcort.%s.txt" % parcellation))
         surf_subcort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_subcort.zip"))
-        surf_cort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_cort.txt"))
+        surf_cort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_cort.%s.txt" % parcellation))
         surf_cort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_cort.zip"))
 
     log.info('complete in %0.2fs', time.time() - tic)
 
 
 def main():
-    subject_dir, source_lut, target_lut, weights_file, tract_lengths_file, out_file, out_surf = sys.argv[1:]
+    subject_dir, source_lut, target_lut, parcellation, weights_file, tract_lengths_file, out_file, out_surf = sys.argv[1:]
 
     logging.basicConfig(level=logging.INFO)
 
@@ -597,6 +627,7 @@ def main():
         os.path.join(subject_dir, "aseg2srf"),
         source_lut,
         target_lut,
+        parcellation,
         weights_file,
         tract_lengths_file,
         out_file,

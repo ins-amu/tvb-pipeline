@@ -9,8 +9,8 @@
 %.nii.gz: %.mif
 	mrconvert -force $< $@
 
-%.mif: %.nii.gz
-	mrconvert -force $< $@
+# %.mif: %.nii.gz
+# 	mrconvert -force $< $@
 
 # e.g. make T1=/foo/bar.dcmdjpeg.dir ...
 %.dcmdjpeg.dir: %
@@ -26,16 +26,16 @@
 # }}}
 
 # TVB compatible files {{{
-$(sd)/tvb/connectivity.zip: $(fs_done) $(sd)/dwi/triu_counts.txt $(sd)/dwi/triu_lengths.txt $(sd)/aseg2srf
+$(sd)/tvb/connectivity.%.zip: $(fs_done) $(sd)/dwi/triu_counts.%.txt $(sd)/dwi/triu_lengths.%.txt $(sd)/dwi/lut.%.txt $(sd)/aseg2srf
 	mkdir -p $(sd)/tvb
 	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
 	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc
 	python -m util.create_tvb_dataset $(sd) \
-	    $(lut_fs) $(lut_target) \
-		$(sd)/dwi/triu_counts.txt $(sd)/dwi/triu_lengths.txt \
-	    $(sd)/tvb/connectivity.zip $(sd)/tvb
+	    $(lut_fs) $(sd)/dwi/lut.$*.txt $* \
+		$(sd)/dwi/triu_counts.$*.txt $(sd)/dwi/triu_lengths.$*.txt \
+	    $(sd)/tvb/connectivity.$*.zip $(sd)/tvb
 
-$(sd)/tvb/img/connectivity.png: $(sd)/tvb/connectivity.zip
+$(sd)/tvb/img/connectivity.%.png: $(sd)/tvb/connectivity.%.zip
 	mkdir -p $(sd)/tvb/img
 	python -m util.plot plot_connectivity $< $@
 
