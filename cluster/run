@@ -13,15 +13,13 @@ function getValue {
 }
 
 function runSubject {
-    args=$*
-
     # Commented ?
-    if [[ $args =~ [:space:]*\#.* ]]
+    if [[ "$*" =~ [:space:]*\#.* ]]
     then
         return
     fi
 
-    subject=`getValue SUBJECT $args`
+    subject=`getValue SUBJECT "$@"`
     if [[ -z $subject ]]
     then
         echo "Missing SUBJECT"
@@ -32,7 +30,8 @@ function runSubject {
     outfile=$subjects_dir/_logs/${subject}.%j.stdout
     errfile=$subjects_dir/_logs/${subject}.%j.stderr
 
-    $submit_cmd -o $outfile -e $errfile $run_one_path $args
+    echo "$@"
+    $submit_cmd -o $outfile -e $errfile $run_one_path "$@"
 }
 
 
@@ -60,7 +59,12 @@ then
 else
     while read LINE
     do
-        echo $LINE
-        runSubject $LINE
+        # Split the quoted arguments correctly
+        args=()
+        while read elem; do
+            args+=("$elem")
+        done < <(echo "$LINE" | xargs -n 1)
+
+        runSubject "${args[@]}"
     done < $1
 fi
