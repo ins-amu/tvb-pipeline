@@ -82,7 +82,7 @@ seeg: $(sd)/seeg/fif $(sd)/seeg/img
 
 $(sd)/seeg/fif: $(XLSX) $(SEEGRECDIR) $(sd)/elec/seeg.xyz
 	mkdir -p $@
-	python -m util.parse_patient_xlsx convert_recordings $(XLSX) $(SEEGRECDIR) $(sd)/seeg/elec.xyz $(sd)/seeg/fif/
+	python -m util.parse_patient_xlsx convert_recordings $(XLSX) $(SEEGRECDIR) $(sd)/elec/seeg.xyz $(sd)/seeg/fif/
 
 $(sd)/seeg/img: $(sd)/seeg/fif
 	mkdir -p $@
