@@ -1,5 +1,6 @@
 
 
+import enum
 import itertools
 
 import nibabel as nib
@@ -144,3 +145,93 @@ def point_to_brain_region(point, label_volume, outside_index=0, tol=0.0):
     raise ValueError("Run out of coord sequence!")
 
 # -------------------------------------------------------------------- #
+
+def voxel_neighbours(voxel, shape, r=1):
+    """
+    >>> voxel_neighbours((0, 0, 0), (3, 3, 1))
+    [(0, 1, 0), (1, 0, 0), (1, 1, 0)]
+    """
+    i, j, k = voxel
+    neighs = [(ii, jj, kk) for ii in np.arange(i - r, i + r + 1)
+                           for jj in np.arange(j - r, j + r + 1)
+                           for kk in np.arange(k - r, k + r + 1)
+              if ((ii != i) or (jj != j) or (kk != k))
+                  and (ii >= 0) and (jj >= 0) and (kk >=0)
+                  and (ii < shape[0]) and (jj < shape[1]) and (kk < shape[2])]
+
+    return neighs
+
+
+def separate_components(volume, r=1):
+    """
+    Separate a boolean volume into components
+
+    >>> nc, comps = separate_components(np.array([[[False, True,  False], \
+                                                   [False, False, False], \
+                                                   [True,  True,  True]]]))
+    >>> nc
+    2
+    >>> comps.tolist()
+    [[[-1, 0, -1], [-1, -1, -1], [1, 1, 1]]]
+    """
+
+    components = -1 * np.ones_like(volume, dtype=int)
+    current_comp = -1
+
+    for init_voxel in zip(*np.where(volume)):
+        if components[init_voxel] == -1:
+            current_comp += 1
+            lifo = [init_voxel]
+            while len(lifo) > 0:
+                voxel = lifo.pop()
+                if components[voxel] == -1 and volume[voxel] == True:
+                    components[voxel] = current_comp
+                    lifo.extend(voxel_neighbours(voxel, volume.shape, r))
+
+
+    return current_comp + 1, components
+
+
+def translate_ez_hypothesis(label_file_src, label_file_trg, ez_hyp_src, nreg_trg):
+    """
+    Translate ez_hyp_src ({0, 1} vector of length nregions_src) to ez_hyp_trg.
+    First refers to the regions in label_file_src, second to label_file_trg.
+    """
+
+    TRG_EZ_THRESHOLD = 0.5
+
+    if label_file_src == label_file_trg:
+        return ez_hyp_src
+
+    # -1 to account for the shift
+    label_src = nib.load(label_file_src).get_data().astype(int) - 1
+    label_trg = nib.load(label_file_trg).get_data().astype(int) - 1
+    assert label_src.shape == label_trg.shape
+
+    # Translate hypothesis in source segmentation to a voxel-based hypothesis
+    ez_volume =  np.zeros_like(label_src, dtype=int)
+    nreg_src = len(ez_hyp_src)
+    for i in range(nreg_src):
+        ez_volume[label_src == i] = ez_hyp_src[i]
+
+    # Generate target hypothesis:
+    # First, set as epileptogenic the regions with more than TRG_EZ_THRESHOLD of epileptogenic voxels
+    ez_hyp_trg = np.zeros(nreg_trg, dtype=int)
+    for i in range(nreg_trg):
+        region_mask = label_trg == i
+        if np.mean(ez_volume[region_mask]) > TRG_EZ_THRESHOLD:
+            ez_hyp_trg[i] = 1
+
+    # Second, make sure that for each region in source ez_hyp there is at least one in target ez_hyp
+    for i in range(nreg_src):
+        if ez_hyp_src[i] == 1:
+            reg_mask = label_src == i
+            max_overlapping_region = np.argmax([np.sum(reg_mask * (label_trg == j)) for j in range(nreg_trg)])
+            ez_hyp_trg[max_overlapping_region] = 1
+
+    return ez_hyp_trg
+
+
+if __name__ == "__main__":
+    import sys
+    translate_ez_hypothesis(*sys.argv[1:])

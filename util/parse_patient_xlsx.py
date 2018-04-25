@@ -17,6 +17,8 @@ from .elecs import Contacts
 from . import nifti
 from . import read_eeg
 
+DATADIR = os.path.join(os.path.dirname(__file__), "data")
+
 def get_sec(time):
     if pd.isna(time):
         return None
@@ -224,30 +226,52 @@ def get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file):
     return ez_inds
 
 
-
-def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file, output_file):
-    """Extract the EZ hypothesis from the xlsx file and save it to plain text file"""
-
+def get_nregions(tvb_zipfile):
     with zipfile.ZipFile(tvb_zipfile) as zf:
         with zf.open("centres.txt") as fl:
             region_names = list(np.genfromtxt(fl, usecols=(0,), dtype=str))
+    return len(region_names)
 
-    nreg = len(region_names)
 
-    ez_inds_from_regions = get_ez_from_regions(xlsx_file, region_names)
-    ez_inds_from_contacts = get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file)
-    ez_inds = list(set(ez_inds_from_regions + ez_inds_from_contacts))
+def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file_dk, output_file,
+                       label_volume_file_trg=None):
+    """
+    Extract the EZ hypothesis from the xlsx file and save it to plain text file.
 
-    ez_hyp = np.zeros(nreg, dtype=int)
+    Args:
+    xlsx_file (str):              Path to the patient excel file.
+    tvb_zipfile (str):            Path to the TVB zipfile for target parcellation.
+    contacts_file (str):          Path to the text file with contact coordinates.
+    label_volume_file_dk (str):   Path to the nifti label volume file for Desikan-Killiany parcellation.
+                                  DK parcellation is used for the EZ specification and the parcellation is thus needed
+                                  even if the target parcellation is different.
+    output_file (str):            Path to the generated text file with EZ hypothesis.
+    label_volume_file_trg (str):  (Optional) Path to the nifti label volume file for the target parcellation.
+                                  If absent, Desikan-Killiany is thought to be the desired target parcellation.
+    """
+    region_names_dk = list(np.genfromtxt(os.path.join(DATADIR, "region_names.dk.txt"), usecols=(0,), dtype=str))
+    nreg_dk = len(region_names_dk)
 
-    # TODO: allow other parcellations
-    if nreg == 84:
-        ez_hyp[ez_inds] = 1
+    nreg_trg = get_nregions(tvb_zipfile)
+
+    # Epileptogenic regions in DK parcellation
+    ez_inds_dk_from_regions = get_ez_from_regions(xlsx_file, region_names_dk)
+
+    ez_hyp_dk = np.zeros(nreg_dk, dtype=int)
+    ez_hyp_dk[ez_inds_dk_from_regions] = 1
+
+    # Translate to the target parcellation if needed
+    if label_volume_file_trg is not None:
+        ez_hyp_trg = nifti.translate_ez_hypothesis(label_volume_file_dk, label_volume_file_trg, ez_hyp_dk, nreg_trg)
     else:
-        # Other parcellations not implemented yet
-        pass
+        ez_hyp_trg = ez_hyp_dk
+        label_volume_file_trg = label_volume_file_dk
 
-    np.savetxt(output_file, ez_hyp, fmt='%i')
+    # Epileptogenic regions from contact specification (parcellation independent)
+    ez_inds_trg_from_contacts = get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file_trg)
+    ez_hyp_trg[ez_inds_trg_from_contacts] = 1
+
+    np.savetxt(output_file, ez_hyp_trg, fmt='%i')
 
 
 
