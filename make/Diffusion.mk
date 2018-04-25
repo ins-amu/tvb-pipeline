@@ -52,10 +52,10 @@ $(sd)/dwi/label.%.mif: $(sd)/dwi/aparc+aseg.%.nii.gz $(sd)/dwi/lut.%.txt
 	    $@ -force $(dwi_log)
 
 # convert FS labels to connectivity labels in T1 space
-$(sd)/dwi/label_in_T1.nii.gz: $(sd)/mri/$(aa).RAS.RO.nii.gz
+$(sd)/dwi/label_in_T1.%.nii.gz: $(sd)/mri/aparc+aseg.%.RAS.RO.nii.gz
 	labelconvert $< \
 		$(lut_fs) \
-		$(lut_target) \
+		$(sd)/dwi/lut.$*.txt \
 		$@ -force $(dwi_log)
 
 # generate all tracks

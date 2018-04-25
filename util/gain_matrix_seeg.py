@@ -87,9 +87,10 @@ def compute_vertex_areas(vertices, triangles):
     return vertex_areas
 
 
-def read_surf(directory: os.PathLike, use_subcort):
-    reg_map_cort = np.genfromtxt((os.path.join(directory, "region_mapping_cort.txt")), dtype=int)
-    reg_map_subc = np.genfromtxt((os.path.join(directory, "region_mapping_subcort.txt")), dtype=int)
+def read_surf(directory: os.PathLike, parcellation: str, use_subcort):
+    parc_str = "." + parcellation if parcellation is not None else ""
+    reg_map_cort = np.genfromtxt((os.path.join(directory, "region_mapping_cort%s.txt" % parc_str)), dtype=int)
+    reg_map_subc = np.genfromtxt((os.path.join(directory, "region_mapping_subcort%s.txt" % parc_str)), dtype=int)
 
     with zipfile.ZipFile(os.path.join(directory, "surface_cort.zip")) as zip:
         with zip.open('vertices.txt') as fhandle:
@@ -152,6 +153,7 @@ def main():
     parser.add_argument('--mode', type=str, choices=['surface', 'region'], required=True)
     parser.add_argument('--formula', type=str, choices=['dipole', 'inv_square'], required=True)
     parser.add_argument('--surf_dir', help="Directory with surfaces and region mapping. Required if mode is 'surface'.")
+    parser.add_argument('--parcellation', help="Parcellation name. Required if mode is 'surface'.")
 
     use_subcort_parser = parser.add_mutually_exclusive_group(required=True)
     use_subcort_parser.add_argument('--use_subcort', dest='use_subcort', action='store_true')
@@ -168,7 +170,7 @@ def main():
     nregions = get_nregions(args.tvb_zipfile)
 
     if args.mode == 'surface':
-        verts, normals, areas, regmap = read_surf(args.surf_dir, args.use_subcort)
+        verts, normals, areas, regmap = read_surf(args.surf_dir, args.parcellation, args.use_subcort)
     elif args.mode == 'region':
         verts, normals, areas, regmap = read_regions(args.tvb_zipfile, args.use_subcort)
 

@@ -53,27 +53,31 @@ $(sd)/elec/seeg.xyz: $(sd)/elec/labeled_$(elec_mode).nii.gz $(sd)/elec/schema.tx
 	python -m util.util gen_seeg_xyz $^ $@
 endif
 
-$(sd)/elec/gain_dipole_no-subcort.mat: $(sd)/tvb/connectivity.zip $(sd)/elec/seeg.xyz
+$(sd)/elec/gain_dipole_no-subcort.%.txt: $(sd)/tvb/connectivity.%.zip $(sd)/elec/seeg.xyz
 	python -m util.gain_matrix_seeg \
 	  --mode surface \
 	  --formula dipole \
 	  --no_use_subcort \
 	  --surf_dir $(sd)/tvb/ \
+	  --parcellation $* \
 	  $^ $@
 
-$(sd)/elec/gain_inv-square.mat: $(sd)/tvb/connectivity.zip $(sd)/elec/seeg.xyz
+$(sd)/elec/gain_inv-square.%.txt: $(sd)/tvb/connectivity.%.zip $(sd)/elec/seeg.xyz
 	python -m util.gain_matrix_seeg \
 	  --mode surface \
 	  --formula inv_square \
 	  --use_subcort \
 	  --surf_dir $(sd)/tvb/ \
+	  --parcellation $* \
 	  $^ $@
 
-$(sd)/elec/img: $(sd)/tvb/connectivity.zip $(sd)/elec/seeg.xyz $(sd)/mri/T1.RAS.nii.gz $(sd)/elec/$(elec_mode)_in_T1.nii.gz
+$(sd)/elec/img: $(sd)/elec/seeg.xyz $(sd)/mri/T1.RAS.nii.gz $(sd)/elec/$(elec_mode)_in_T1.nii.gz
 	mkdir -p $@
-	python -m util.plot seeg_elecs $(sd)/tvb/connectivity.zip $(sd)/elec/seeg.xyz $(sd)/elec/img/elec.png
 	python -m util.plot plot_t1_plus_elecs $(sd)/mri/T1.RAS.nii.gz $(sd)/elec/$(elec_mode)_in_T1.nii.gz \
 	    $(sd)/elec/seeg.xyz $@
+
+$(sd)/elec/elec.%.png: $(sd)/tvb/connectivity.%.zip $(sd)/elec/seeg.xyz
+	python -m util.plot seeg_elecs $^ $@
 
 
 # SEEG recordings -------------------------------------------------------------------- #

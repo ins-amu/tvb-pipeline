@@ -45,9 +45,14 @@ resamp-anat: $(sd)/surf/lh.$(sval).$(resamp_target) $(sd)/surf/rh.$(sval).$(resa
 tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.dk.txt $(sd)/dwi/lengths.dk.txt
 labeled_elec: $(sd)/elec/labeled_$(elec_mode).nii.gz
-elec: $(sd)/elec/seeg.xyz $(sd)/elec/gain_dipole_no-subcort.mat $(sd)/elec/gain_inv-square.mat $(sd)/elec/img
-tvb: $(sd)/tvb/connectivity.dk.zip $(sd)/tvb/img/connectivity.dk.png $(sd)/tvb/connectivity.destrieux.zip $(sd)/tvb/img/connectivity.destrieux.png
-ez: $(sd)/tvb/ez_hypothesis.txt $(sd)/tvb/img/ez_hypothesis.png
+elec: $(sd)/elec/seeg.xyz $(sd)/elec/img \
+      $(sd)/elec/elec.dk.png $(sd)/elec/elec.destrieux.png \
+      $(sd)/elec/gain_dipole_no-subcort.dk.txt        $(sd)/elec/gain_inv-square.dk.txt  \
+      $(sd)/elec/gain_dipole_no-subcort.destrieux.txt $(sd)/elec/gain_inv-square.destrieux.txt
+tvb: $(sd)/tvb/connectivity.dk.zip         $(sd)/tvb/img/connectivity.dk.png \
+     $(sd)/tvb/connectivity.destrieux.zip  $(sd)/tvb/img/connectivity.destrieux.png
+ez: $(sd)/tvb/ez_hypothesis.dk.txt         $(sd)/tvb/img/ez_hypothesis.dk.png \
+	$(sd)/tvb/ez_hypothesis.destrieux.txt  $(sd)/tvb/img/ez_hypothesis.destrieux.png
 
 mrinfo:
 	echo $(SUBJECT)
@@ -61,9 +66,9 @@ nothing:
 	echo "doing nothing for subject $(SUBJECT) per request"
 
 dag.png: Makefile
-	mkdir dag
-	touch dag/{t1,dwi}
-	make -Bnd SUBJECTS_DIR=subjects SUBJECT=dag T1=t1 DWI=dwi fs-recon conn | make2graph | dot -Tpng -o dag.png
+	mkdir -p dag/t1 dag/dwi dag/elec dag/seeg
+	touch dag/elec/pos_vox.txt dag/elec/elec_ct.nii.gz dag/patient.xlsx
+	make -Bnd SUBJECTS_DIR=subjects SUBJECT=dag data=. fs-recon conn tvb elec seeg ez | make2graph  | dot -Tpng -o dag.png
 	rm -r dag
 
 docker:

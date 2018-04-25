@@ -239,7 +239,13 @@ def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file,
     ez_inds = list(set(ez_inds_from_regions + ez_inds_from_contacts))
 
     ez_hyp = np.zeros(nreg, dtype=int)
-    ez_hyp[ez_inds] = 1
+
+    # TODO: allow other parcellations
+    if nreg == 84:
+        ez_hyp[ez_inds] = 1
+    else:
+        # Other parcellations not implemented yet
+        pass
 
     np.savetxt(output_file, ez_hyp, fmt='%i')
 
