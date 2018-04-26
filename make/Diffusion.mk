@@ -8,9 +8,9 @@ $(sd)/dwi/raw.mif: $(DWI) $(sd)/mri/orig/001.mgz
 	mrconvert $(raw_mif_convert_flags) -force $< $@ $(dwi_log)
 
 # register T1 to DWI image
-$(sd)/dwi/t2d.mat: $(fs_done) $(sd)/dwi/bzero.nii.gz $(sd)/mri/T1.RAS.nii.gz
+$(sd)/dwi/t2d.mat: $(fs_done) $(sd)/dwi/bzero.nii.gz $(sd)/mri/T1.RAS.RO.nii.gz
 	flirt -ref $(sd)/dwi/bzero.nii.gz \
-	    -in $(sd)/mri/T1.RAS.nii.gz \
+	    -in $(sd)/mri/T1.RAS.RO.nii.gz \
 	    -omat $(sd)/dwi/t2d.mat \
 	    -out $(sd)/dwi/T1_in_bzero.nii.gz \
 	    $(regopts) $(dwi_log)
@@ -53,7 +53,7 @@ $(sd)/dwi/label.%.mif: $(sd)/dwi/aparc+aseg.%.nii.gz $(sd)/dwi/lut.%.txt
 
 # convert FS labels to connectivity labels in T1 space
 .PRECIOUS: $(sd)/dwi/label_in_T1.%.nii.gz
-$(sd)/dwi/label_in_T1.%.nii.gz: $(sd)/mri/aparc+aseg.%.RAS.RO.nii.gz
+$(sd)/dwi/label_in_T1.%.nii.gz: $(sd)/mri/aparc+aseg.%.RAS.RO.nii.gz $(sd)/dwi/lut.%.txt
 	labelconvert $< \
 		$(lut_fs) \
 		$(sd)/dwi/lut.$*.txt \
