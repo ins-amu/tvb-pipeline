@@ -1,4 +1,4 @@
-# tvb-make
+# pipeline
 
 This is a workflow for preparing and using TVB brain network models, comprised of
 three main components
@@ -59,9 +59,27 @@ outputs.
 
 ### Targets
 
-- `fs-recon` - FreeSurfer reconstruction, `recon-all -all ...`
-- `resamp-anat` - Lower resolution cortical surfaces & annotations
-- `conn` - Connectivity files
+- `fs-recon`: FreeSurfer reconstruction. Consists mainly of running `recon-all -all`.
+  Uses `T1`.
+
+- `resamp-anat`: Lower resolution cortical surfaces & annotations
+  Uses `T1`.
+
+- `conn`: Connectivity matrices in text format.
+  Uses `T1` and `DWI`.
+
+- `tvb`: TVB zipfile, cortical and subcortical surfaces in TVB formats, region mappings.
+  Uses `T1` and `DWI`.
+
+- `elec`: Positions of the contacts of depth electrodes and gain matrices.
+  Uses `T1`, `DWI`, `ELEC`, and either `ELEC_ENDPOINTS` or `ELEC_POS_GARDEL`.
+
+- `seeg`: Conversion of SEEG recordings to FIF format and plotting the recordings.
+  Uses `SEEGRECDIR`, `XLSX` and everything that `elec` uses.
+
+- `ez`: Extraction of the epileptogenic zone from the patient Excel file.
+  Uses `XLSX` and everything that `elec` uses.
+ 
 
 _TODO_ more details & help on this
 
@@ -107,13 +125,21 @@ environment variable.
 
 ### Marseille Cluster
 
-The `cluster/run` script assists in running the pipeline on the Marseille
-cluster through two modes. First, invoke with typical arguments
+For quick introduction look at the basic [step-by-step tutorial](doc/TutorialCluster.md).
+
+There are two options for running the pipeline on the cluster: non-interactive and interactive.
+For running the full pipeline, non-interactive mode is recommended due to the large time requirements. 
+For small updates and testing the interactive mode might be more suitable.
+
+#### Non-interactive mode
+
+In the non-interactive regime, you prepare the data and submit the job(s), and the scheduler takes cares of the execution.
+The `cluster/run` script assists in running the pipeline on the Marseille cluster through two modes.
+ First, invoke with typical arguments
 ```bash
-cluster/run SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
+<PIPELINE_DIR>/cluster/run SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
 ```
-for a single run in a single OAR job, or for many subjects,
-create a file `params.txt` with multiple lines of arguments, e.g.
+for a single run in a single SLURM job. If you have many subjects, create a file `params.txt` with multiple lines of arguments, e.g.
 ```
 SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
 SUBJECTS_DIR=fs SUBJECT=bar T1=data/T2.nii.gz fs-recon conn
@@ -121,14 +147,40 @@ SUBJECTS_DIR=fs SUBJECT=baz T1=data/T3.nii.gz conn
 ```
 then
 ```
-cluster/run params.txt
+<PIPELINE_DIR>/cluster/run params.txt
 ```
-Each line will result in the pipeline running once for the arguments
-on a given line, and an OAR job.
+Each line will result in the pipeline running a SLURM job for every line. You can comment out a line if you prepend it with a `#` sign,
+```
+ # SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
+```
 
 NB You need to provide a custom, valid FreeSurfer `SUBJECTS_DIR`,
 since the default directories on the cluster (`/soft/freesurfer*/subjects`)
 are not writeable by users.
+
+#### Interactive mode
+
+First, request a computational node in the interactive mode
+```
+srun --pty bash
+```
+which should give you the interactive node if there is one available.
+
+If you need to run the reconstruction and tractography in the interactive mode
+(although that is discouraged), you need to request full node with enough memory:
+```
+srun -N 1 -n 1 --exclusive --mem=60G --pty bash
+```
+
+Then setup your working environment by loading the environment file,
+```
+source <PIPELINE_DIR>/cluster/env
+```
+and run `make` by hand:
+```
+make -f <PIPELINE_DIR>/Makefile  SUBJECTS_DIR=fs SUBJECT=foo T1=data/T1.nii.gz fs-recon
+```
+
 
 ## Special Cases
 
