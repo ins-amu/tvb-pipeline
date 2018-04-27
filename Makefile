@@ -16,6 +16,10 @@ endif
 
 # default data layout {{{
 DATA ?= data
+
+# Shorthand for the Data Directory for use in the params file
+DD = $(DATA)/$(SUBJECT)
+
 T1 ?= $(DATA)/$(SUBJECT)/t1/
 DWI ?= $(DATA)/$(SUBJECT)/dwi/
 ELEC ?= $(DATA)/$(SUBJECT)/elec/elec.nii.gz
