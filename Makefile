@@ -49,6 +49,7 @@ resamp-anat: $(sd)/surf/lh.$(resamp_sval).$(resamp_target) $(sd)/surf/rh.$(resam
 tck: $(sd)/dwi/100k.tck
 conn: $(sd)/dwi/counts.dk.txt        $(sd)/dwi/lengths.dk.txt  \
 	  $(sd)/dwi/counts.destrieux.txt $(sd)/dwi/lengths.destrieux.txt
+conn_label: $(sd)/dwi/label_in_T1.dk.nii.gz $(sd)/dwi/label_in_T1.destrieux.nii.gz
 labeled_elec: $(sd)/elec/labeled_elec-$(elec_mode).nii.gz
 elec: $(sd)/elec/seeg.xyz $(sd)/elec/img \
       $(sd)/elec/elec.dk.png $(sd)/elec/elec.destrieux.png \
