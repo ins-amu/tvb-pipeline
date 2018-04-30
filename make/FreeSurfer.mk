@@ -53,7 +53,7 @@ $(sd)/aseg2srf: $(fs_done)
 	$(here)/util/aseg2srf -s $(SUBJECT)
 
 $(sd)/mri/aparc+aseg.dk.mgz: $(fs_done)
-	ln -s ./aparc+aseg.mgz $@
+	ln -sf ./aparc+aseg.mgz $@
 
 $(sd)/mri/aparc+aseg.destrieux.mgz: $(fs_done)
-	ln -s ./aparc.a2009s+aseg.mgz $@
+	ln -sf ./aparc.a2009s+aseg.mgz $@
