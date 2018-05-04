@@ -162,7 +162,7 @@ def convert_recordings(xlsx_file, seeg_rec_dir, contacts_file, output_direc):
                 jsonname = get_sidecar_name(row['File'], row['_File_repeated'], row['_File_index'])
                 eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename)).to_fif()
 
-            eeg.save(os.path.join(output_direc, conv_filename))
+            eeg.save(os.path.join(output_direc, conv_filename), overwrite=True)
 
             data = {
                 'filename': conv_filename,
