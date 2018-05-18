@@ -18,27 +18,31 @@ $(sd)/mri/orig/001.mgz: $(T1)
 $(fs_done): $(sd)/mri/orig/001.mgz
 	recon-all -s $(SUBJECT) -all -parallel -openmp $(nthread)
 
+$(sd)/mri/T1.RAS.nii.gz: $(fs_done)
+	mri_convert -rt nearest --out_orientation RAS $(sd)/mri/T1.mgz $@
+
+
 # this ensures we have a writeable copy of the resample target data
 $(rtd):
 	cp -r $(FREESURFER_HOME)/subjects/$(resamp_target) $(SUBJECTS_DIR)/
 
 # resample anatomy, usually at lower resolution
-$(sd)/surf/%.$(sval).$(resamp_target): $(rtd) $(fs_done)
+$(sd)/surf/%.$(resamp_sval).$(resamp_target): $(rtd) $(fs_done)
 	mri_surf2surf \
 		--srcsubject $(SUBJECT) \
 		--trgsubject $(resamp_target) \
 		--hemi $* \
-		--sval-xyz $(sval) \
-		--tval $(sval).$(SUBJECT) \
+		--sval-xyz $(resamp_sval) \
+		--tval $(resamp_sval).$(SUBJECT) \
 		--tval-xyz $(sd)/mri/T1.mgz
-	cp $(rtd)/surf/$*.$(sval).$(SUBJECT) \
-	    $(sd)/surf/$*.$(sval).$(resamp_target)
+	cp $(rtd)/surf/$*.$(resamp_sval).$(SUBJECT) \
+	    $(sd)/surf/$*.$(resamp_sval).$(resamp_target)
 	mri_surf2surf \
 		--srcsubject $(SUBJECT) \
 		--trgsubject $(resamp_target) \
 		--hemi $* \
-		--sval-annot $(sd)/label/$*.$(parc).annot \
-		--tval $(sd)/label/$*.$(parc).annot.$(resamp_target)
+		--sval-annot $(sd)/label/$*.$(resamp_parc).annot \
+		--tval $(sd)/label/$*.$(resamp_parc).annot.$(resamp_target)
 
 # generate centers
 $(sd)/mri/$(aa).xyz: $(fs_done)
@@ -47,3 +51,9 @@ $(sd)/mri/$(aa).xyz: $(fs_done)
 # generate subcortical region volume bounding surfaces
 $(sd)/aseg2srf: $(fs_done)
 	$(here)/util/aseg2srf -s $(SUBJECT)
+
+$(sd)/mri/aparc+aseg.dk.mgz: $(fs_done)
+	ln -sf ./aparc+aseg.mgz $@
+
+$(sd)/mri/aparc+aseg.destrieux.mgz: $(fs_done)
+	ln -sf ./aparc.a2009s+aseg.mgz $@

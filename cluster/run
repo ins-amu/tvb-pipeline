@@ -13,15 +13,13 @@ function getValue {
 }
 
 function runSubject {
-    args=$*
-
     # Commented ?
-    if [[ $args =~ [:space:]*\#.* ]]
+    if [[ "$*" =~ [:space:]*\#.* ]]
     then
         return
     fi
 
-    subject=`getValue SUBJECT $args`
+    subject=`getValue SUBJECT "$@"`
     if [[ -z $subject ]]
     then
         echo "Missing SUBJECT"
@@ -32,7 +30,8 @@ function runSubject {
     outfile=$subjects_dir/_logs/${subject}.%j.stdout
     errfile=$subjects_dir/_logs/${subject}.%j.stderr
 
-    $submit_cmd -o $outfile -e $errfile $run_one_path $args
+    echo "$@"
+    $submit_cmd -o $outfile -e $errfile $run_one_path "$@"
 }
 
 
@@ -42,15 +41,7 @@ run_one_path=$(cd $(dirname $0) && pwd)/run-one
 pipeline_dir=$(cd $(dirname $0)/.. && pwd)
 
 # Submit using SLURM
-submit_cmd="sbatch -N 1 -n 1 --exclude=n01 --mem=60G --exclusive"
-
-# We have to pass the environment variables explicitely
-if [[ ! -z $SUBJECTS_DIR ]]
-then
-    submit_cmd="${submit_cmd} --export=SUBJECTS_DIR=${SUBJECTS_DIR},PIPELINE_DIR=${pipeline_dir}"
-else
-    submit_cmd="${submit_cmd} --export=PIPELINE_DIR=${pipeline_dir}"
-fi
+submit_cmd="sbatch -N 1 -n 1 --exclude=n01 --mem=60G --exclusive --export=PIPELINE_DIR=${pipeline_dir},ALL"
 
 subjects_dir=${SUBJECTS_DIR:-$(pwd)/fs}
 
@@ -60,7 +51,12 @@ then
 else
     while read LINE
     do
-        echo $LINE
-        runSubject $LINE
+        # Split the quoted arguments correctly
+        args=()
+        while read elem; do
+            args+=("$elem")
+        done < <(echo "$LINE" | xargs -n 1)
+
+        runSubject "${args[@]}"
     done < $1
 fi

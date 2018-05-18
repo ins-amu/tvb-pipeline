@@ -15,9 +15,14 @@ import pandas as pd
 
 from .elecs import Contacts
 from . import nifti
+from . import read_eeg
+
+DATADIR = os.path.join(os.path.dirname(__file__), "data")
 
 def get_sec(time):
-    if type(time) == float:
+    if pd.isna(time):
+        return None
+    elif type(time) == float:
         # Already in seconds
         return time
     elif type(time) == datetime.time:
@@ -82,49 +87,93 @@ def expand_channels(ch_list):
     return new_list
 
 
-def gen_sidecar_files(xlsx_file, output_direc):
-    convert_format = {'.eeg': '.raw.fif'}
+def get_bad_channels(cell_value):
+    if pd.isna(cell_value) or cell_value == 0:
+        return []
+    else:
+        return expand_channels([a.strip() for a in re.split("[,;.]", cell_value)])
 
+
+def get_converted_filename(filenames):
+    TARGET_FMT = '.raw.fif'
+
+    if type(filenames) == str:
+        filenames = [filenames]
+
+    roots = [os.path.splitext(filename.strip())[0] for filename in filenames]
+    return "_".join(roots) + TARGET_FMT
+
+
+def get_sidecar_name(filename, is_repeated, file_index):
+    known_extensions = ['.eeg', '.raw.fif']
+
+    basename = os.path.splitext(filename)[0]
+    for ext in known_extensions:
+        if filename[-len(ext):] == ext:
+            basename = filename[:-len(ext)]
+
+    if not is_repeated:
+        return basename + ".json"
+    else:
+        return basename + "_" + str(file_index) + ".json"
+
+
+def convert_recordings(xlsx_file, seeg_rec_dir, contacts_file, output_direc):
     df = pd.read_excel(xlsx_file, sheet_name="Recordings")
     add_same_occurence_index(df, 'File')
 
-    # TODO: check that everything is where expected
+    contact_names = np.genfromtxt(contacts_file, usecols=(0,), dtype=str)
 
-    for index, row in df.iterrows():
+    iterrows = df.iterrows()
+    for index, row in iterrows:
         if pd.notna(row['File']):
-            onset = get_sec(row['Onset']) if pd.notna(row['Onset']) else None
-            termination = get_sec(row['Termination']) if pd.notna(row['Termination']) else None
+            if row['Termination'] == '>':
+                # Merge two files
+                index2, row2 = next(iterrows)
+                assert row2['Onset'] == '<'
 
-            bad_channels = row['Bad channels']
-            if pd.isna(bad_channels) or bad_channels == 0:
-                bad_channels = []
+                onset, termination = get_sec(row['Onset']), get_sec(row2['Termination'])
+                bad_channels1 = get_bad_channels(row['Bad channels'])
+                bad_channels2 = get_bad_channels(row2['Bad channels'])
+                orig_filename1 = row['File']
+                orig_filename2 = row2['File']
+                conv_filename = get_converted_filename([orig_filename1, orig_filename2])
+                jsonname = get_sidecar_name(conv_filename, False, None)
+
+                eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename1)).to_fif()
+                eeg2 = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename2)).to_fif()
+
+                assert len(eeg.ch_names) == len(eeg2.ch_names)
+                assert all([ch1 == ch2 for ch1, ch2 in zip(eeg.ch_names, eeg2.ch_names)])
+                assert eeg.info['sfreq'] == eeg2.info['sfreq']
+                assert row['Seizure type'] == row2['Seizure type']
+
+                bad_channels = sorted(list(set(bad_channels1 + bad_channels2)))
+                termination += (eeg.n_times - 1) * (1./eeg.info['sfreq'])
+
+                eeg.append(eeg2)
+
+
             else:
-                bad_channels = expand_channels([a.strip() for a in re.split("[,;.]", bad_channels)])
+                onset, termination = get_sec(row['Onset']), get_sec(row['Termination'])
+                bad_channels = get_bad_channels(row['Bad channels'])
+                orig_filename = row['File']
+                conv_filename = get_converted_filename(row['File'])
+                jsonname = get_sidecar_name(row['File'], row['_File_repeated'], row['_File_index'])
+                eeg = read_eeg.EEG(os.path.join(seeg_rec_dir, orig_filename)).to_fif()
 
-            filename = row['File'].strip()
-            if convert_format is not None:
-                root, ext = os.path.splitext(filename)
-                ext = ext.lower()
-                if ext in convert_format:
-                    filename = root + convert_format[ext]
+            eeg.save(os.path.join(output_direc, conv_filename), overwrite=True)
 
             data = {
-                'filename': filename,
+                'filename': conv_filename,
                 'onset': onset,
                 'termination': termination,
                 'bad_channels': bad_channels,
+                'non_seeg_channels': sorted(list(set(eeg.ch_names) - set(contact_names))),
                 'type': row['Seizure type']
             }
 
-            basename = os.path.splitext(row['File'])[0]
-
-            if not row['_File_repeated']:
-                jsonfile = basename + ".json"
-            else:
-                jsonfile = basename + "_" + str(row['_File_index']) + ".json"
-
-            sidecar_name = os.path.join(output_direc, jsonfile)
-            with open(sidecar_name, 'w') as outfile:
+            with open(os.path.join(output_direc, jsonname), 'w') as outfile:
                 json.dump(data, outfile, indent=4)
 
 
@@ -177,24 +226,52 @@ def get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file):
     return ez_inds
 
 
-
-def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file, output_file):
-    """Extract the EZ hypothesis from the xlsx file and save it to plain text file"""
-
+def get_nregions(tvb_zipfile):
     with zipfile.ZipFile(tvb_zipfile) as zf:
         with zf.open("centres.txt") as fl:
             region_names = list(np.genfromtxt(fl, usecols=(0,), dtype=str))
+    return len(region_names)
 
-    nreg = len(region_names)
 
-    ez_inds_from_regions = get_ez_from_regions(xlsx_file, region_names)
-    ez_inds_from_contacts = get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file)
-    ez_inds = list(set(ez_inds_from_regions + ez_inds_from_contacts))
+def save_ez_hypothesis(xlsx_file, tvb_zipfile, contacts_file, label_volume_file_dk, output_file,
+                       label_volume_file_trg=None):
+    """
+    Extract the EZ hypothesis from the xlsx file and save it to plain text file.
 
-    ez_hyp = np.zeros(nreg, dtype=int)
-    ez_hyp[ez_inds] = 1
+    Args:
+    xlsx_file (str):              Path to the patient excel file.
+    tvb_zipfile (str):            Path to the TVB zipfile for target parcellation.
+    contacts_file (str):          Path to the text file with contact coordinates.
+    label_volume_file_dk (str):   Path to the nifti label volume file for Desikan-Killiany parcellation.
+                                  DK parcellation is used for the EZ specification and the parcellation is thus needed
+                                  even if the target parcellation is different.
+    output_file (str):            Path to the generated text file with EZ hypothesis.
+    label_volume_file_trg (str):  (Optional) Path to the nifti label volume file for the target parcellation.
+                                  If absent, Desikan-Killiany is thought to be the desired target parcellation.
+    """
+    region_names_dk = list(np.genfromtxt(os.path.join(DATADIR, "region_names.dk.txt"), usecols=(0,), dtype=str))
+    nreg_dk = len(region_names_dk)
 
-    np.savetxt(output_file, ez_hyp, fmt='%i')
+    nreg_trg = get_nregions(tvb_zipfile)
+
+    # Epileptogenic regions in DK parcellation
+    ez_inds_dk_from_regions = get_ez_from_regions(xlsx_file, region_names_dk)
+
+    ez_hyp_dk = np.zeros(nreg_dk, dtype=int)
+    ez_hyp_dk[ez_inds_dk_from_regions] = 1
+
+    # Translate to the target parcellation if needed
+    if label_volume_file_trg is not None:
+        ez_hyp_trg = nifti.translate_ez_hypothesis(label_volume_file_dk, label_volume_file_trg, ez_hyp_dk, nreg_trg)
+    else:
+        ez_hyp_trg = ez_hyp_dk
+        label_volume_file_trg = label_volume_file_dk
+
+    # Epileptogenic regions from contact specification (parcellation independent)
+    ez_inds_trg_from_contacts = get_ez_from_contacts(xlsx_file, contacts_file, label_volume_file_trg)
+    ez_hyp_trg[ez_inds_trg_from_contacts] = 1
+
+    np.savetxt(output_file, ez_hyp_trg, fmt='%i')
 
 
 

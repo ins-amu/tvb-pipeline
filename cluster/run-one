@@ -1,4 +1,4 @@
 #!/bin/bash
 
 source $PIPELINE_DIR/cluster/env
-make -f $PIPELINE_DIR/Makefile $@
+make -f $PIPELINE_DIR/Makefile "$@"
