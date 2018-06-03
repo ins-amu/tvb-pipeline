@@ -9,6 +9,7 @@ import multiprocessing
 import numpy as np
 import scipy.signal
 import mne
+import pycmdstan.io
 
 
 logger = logging.getLogger('preprocess_all.py')
@@ -110,7 +111,7 @@ def process_patient(pid, files):
 	gain = process_patient_gain(pid, files['gain'])
 	seeg_xyz = process_patient_seeg_xyz(files['seeg_xyz'])
 	datasets = []
-	for fif_fname in files['fifs']:
+	for i, fif_fname in enumerate(files['fifs']):
 		logger.info(f'processing {fif_fname}')
 		picks, slp = process_fif_js(pid, files['fifs'][0])
 		gain_pick = np.array([i for i, (label, *_) in enumerate(seeg_xyz)
@@ -121,7 +122,12 @@ def process_patient(pid, files):
 			'picks': picks,
 			'gain': gain[gain_pick],
 			'weights': weights,
+			'nn': gain.shape[1],
+			'ns': len(gain_pick),
+			'nt': slp.shape[1],
 		})
+		pycmdstan.io.rdump(f'datasets/{pid}_{i}.R',
+			{k: v for k, v in datasets[-1].items() if k != 'pid'})
 	return datasets
 
 
