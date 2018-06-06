@@ -146,7 +146,7 @@ def convert_recordings(xlsx_file, seeg_rec_dir, contacts_file, output_direc):
                 assert len(eeg.ch_names) == len(eeg2.ch_names)
                 assert all([ch1 == ch2 for ch1, ch2 in zip(eeg.ch_names, eeg2.ch_names)])
                 assert eeg.info['sfreq'] == eeg2.info['sfreq']
-                assert row['Seizure type'] == row2['Seizure type']
+                assert row['Recording type'] == row2['Recording type']
 
                 bad_channels = sorted(list(set(bad_channels1 + bad_channels2)))
                 termination += (eeg.n_times - 1) * (1./eeg.info['sfreq'])
@@ -170,7 +170,8 @@ def convert_recordings(xlsx_file, seeg_rec_dir, contacts_file, output_direc):
                 'termination': termination,
                 'bad_channels': bad_channels,
                 'non_seeg_channels': sorted(list(set(eeg.ch_names) - set(contact_names))),
-                'type': row['Seizure type']
+                'type': row['Recording type'],
+                'note': row['Notes']
             }
 
             with open(os.path.join(output_direc, jsonname), 'w') as outfile:
