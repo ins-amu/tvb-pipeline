@@ -233,7 +233,14 @@ def transform_gardel_coords_to_tvb(gardel_file, src_img_file, target_img_file, t
                                 dtype=None,
                                 usecols=(0, 1, 2, 3, 4))
 
-    names = [name.decode('UTF-8') + str(ind) for name, ind in zip(orig_coords['Electrode'], orig_coords['Contact'])]
+    header = orig_coords.dtype.names
+    if 'name' in header:
+        names = orig_coords['name'].astype(str)
+    elif 'Electrode' in header and 'Contact' in header:
+        names = [name + str(ind) for name, ind in zip(orig_coords['Electrode'].astype(str), orig_coords['Contact'])]
+    else:
+        raise ValueError("Unexpected header in gardel file '%s'" % gardel_file)
+
     nsensors = len(names)
 
     src_img = nb.load(src_img_file)
