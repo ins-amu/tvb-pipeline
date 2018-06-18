@@ -10,9 +10,10 @@ export SUBJECTS_DIR
 # T1. Other rules depend on the 001.mgz, so that they can
 # run in parallel to the recon-all -all below
 $(sd)/mri/orig/001.mgz: $(T1)
-	mrconvert $(T1) $(SUBJECT)-T1_raw.nii.gz
-	recon-all -s $(SUBJECT) -i $(SUBJECT)-T1_raw.nii.gz
-	rm $(SUBJECT)-T1_raw.nii.gz
+	tmp=$(mktemp -d)
+    mrconvert $(T1) $tmp/T1.nii.gz
+    recon-all -s $(SUBJECT) -i $tmp/T1.nii.gz  
+    rm -r $tmp
 
 # run the full reconstruction w/ parallelism
 $(fs_done): $(sd)/mri/orig/001.mgz
