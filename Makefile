@@ -9,9 +9,6 @@ resamp_parc ?= aparc.a2009s
 resamp_sval ?= pial
 elec_mode ?= CT
 lut_fs := $(FREESURFER_HOME)/FreeSurferColorLUT.txt
-ifneq ($(and $(BVECS),$(BVALS)),)
-    raw_mif_convert_flags := -fslgrad $(BVECS) $(BVALS)
-endif
 # }}}
 
 # default data layout {{{
@@ -31,6 +28,10 @@ ELEC_POS_GARDEL ?= $(DATA)/$(SUBJECT)/elec/pos_vox.txt
 ELEC_ENDPOINTS ?= $(DATA)/$(SUBJECT)/elec/elec_endpoints.txt
 ELEC_LABEL_SCHEMA ?= $(DATA)/$(SUBJECT)/elec/schema.txt
 # }}}
+
+ifneq ($(and $(BVECS),$(BVALS)),)
+    raw_mif_convert_flags := -fslgrad $(BVECS) $(BVALS)
+endif
 
 # misc util {{{
 export SUBJECTS_DIR
