@@ -106,7 +106,7 @@ notebook:
 include $(here)/make/FreeSurfer.mk
 include $(here)/make/Diffusion.mk
 include $(here)/make/StereoEEG.mk
-include $(here)/make/Stan.mk
+include $(here)/make/VEP.mk
 include $(here)/make/Utilities.mk
 #}}}
 
