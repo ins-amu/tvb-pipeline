@@ -59,6 +59,7 @@ tvb: $(sd)/tvb/connectivity.dk.zip         $(sd)/tvb/img/connectivity.dk.png \
      $(sd)/tvb/connectivity.destrieux.zip  $(sd)/tvb/img/connectivity.destrieux.png
 ez: $(sd)/tvb/ez_hypothesis.dk.txt         $(sd)/tvb/img/ez_hypothesis.dk.png \
 	$(sd)/tvb/ez_hypothesis.destrieux.txt  $(sd)/tvb/img/ez_hypothesis.destrieux.png
+vep: $(sd)/vep/data.R
 
 mrinfo:
 	echo $(SUBJECT)
