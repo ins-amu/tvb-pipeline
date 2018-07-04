@@ -12,30 +12,51 @@ class NamedPoints():
         self.names = [l[0].decode('ascii') for l in data]
         self.name_to_xyz = dict(zip(self.names, self.xyz))
 
+
 class Contacts(NamedPoints):
-    contact_single_regex = re.compile("^([A-Za-z]+[']?)([0-9]+)$")
-    contact_pair_regex_1 = re.compile("^([A-Za-z]+[']?)([0-9]+)-([0-9]+)$")
-    contact_pair_regex_2 = re.compile("^([A-Za-z]+[']?)([0-9]+)-([A-Za-z]+[']?)([0-9]+)$")
+    """
+    Load the contacts names and position from file.
+    Assumptions:
+    - Numbering of every electrode starts from 1 and is contiguous: 1, 2, 3, 4, ...
+    - Number of the contact is not prepended by zero.
+    - Name of the electrode can contain letters (upper- and lowercase), numbers, and "'".
+
+    >>> contacts = Contacts(io.BytesIO("A1 0 0 1\\nA2 0 0 2".encode()))
+    >>> list(contacts.electrodes.keys())
+    ['A']
+
+    >>> contacts = Contacts(io.BytesIO("A11 0 0 1\\nA12 0 0 2\\nA21 1 0 1\\nA22 1 0 2".encode()))
+    >>> list(contacts.electrodes.keys())
+    ['A1', 'A2']
+    """
+    contact_pair_regex = re.compile("^([A-Za-z0-9']+)-([A-Za-z0-9']+)$")
 
     def __init__(self, filename):
         super().__init__(filename)
         self.electrodes = {}
-        for i, name in enumerate(self.names):
-            match = self.contact_single_regex.match(name)
-            if match is None:
-                raise ValueError("Unexpected contact name %s" % name)
+        self.name_to_elec = {}
 
-            elec_name, _ = match.groups()
-            if elec_name not in self.electrodes:
-                self.electrodes[elec_name] = []
-            self.electrodes[elec_name].append(i)
+        i = 0
+        while i < len(self.names):
+            if self.names[i][-1] != "1":
+                raise ValueError("Numbering of contacts on electrodes should start at 1. (Line %d, '%s')" % (i, name))
+            elec_name = self.names[i][:-1]
+            elec_num = 0
+            self.electrodes[elec_name] = []
+
+            while i < len(self.names):
+                if self.names[i] != elec_name + str(elec_num + 1):
+                    break
+
+                self.electrodes[elec_name].append(i)
+                self.name_to_elec[self.names[i]] = elec_name
+                elec_num = elec_num + 1
+                i = i +1
+
 
     def get_elec(self, name):
-        match = self.contact_single_regex.match(name)
-        if match is None:
-            return None
+        return self.name_to_elec.get(name, None)
 
-        return match.groups()[0]
 
     def get_coords(self, name):
         """Get the coordinates of a specified contact or contact pair. Allowed formats are:
@@ -57,25 +78,31 @@ class Contacts(NamedPoints):
 
         >>> contacts.get_coords("A2-A1")
         array([0.0, 0.0, 1.5])
+
+        >>> contacts.get_coords("Invalid")
+        Traceback (most recent call last):
+        ...
+        ValueError: Cannot get coordinates for 'Invalid'.
         """
 
-        match = self.contact_single_regex.match(name)
-        if match is not None:
+
+        # Solo contact
+        if name in self.names:
             return self.name_to_xyz[name]
 
-        match = self.contact_pair_regex_1.match(name)
+        # Contact pair
+        match = self.contact_pair_regex.match(name)
         if match is not None:
-            assert abs(int(match.group(2)) - int(match.group(3))) == 1
-            contact1 = match.group(1) + match.group(2)
-            contact2 = match.group(1) + match.group(3)
-            return (self.name_to_xyz[contact1] + self.name_to_xyz[contact2])/2.
+            a1, a2 = match.group(1), match.group(2)
 
-        match = self.contact_pair_regex_2.match(name)
-        if match is not None:
-            assert match.group(1) == match.group(3)
-            assert abs(int(match.group(2)) - int(match.group(4))) == 1
-            contact1 = match.group(1) + match.group(2)
-            contact2 = match.group(3) + match.group(4)
-            return (self.name_to_xyz[contact1] + self.name_to_xyz[contact2])/2.
+            # Model A1-A2
+            if a1 in self.names and a2 in self.names:
+                return (self.name_to_xyz[a1] + self.name_to_xyz[a2])/2.
 
-        raise ValueError("Given name '%s' does not follow any expected pattern." % name)
+            # Model A1-2
+            elif a1 in self.names:
+                a2 = self.name_to_elec[a1] + a2
+                if a2 in self.names:
+                    return (self.name_to_xyz[a1] + self.name_to_xyz[a2])/2.
+
+        raise ValueError("Cannot get coordinates for '%s'." % name)

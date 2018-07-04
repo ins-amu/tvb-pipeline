@@ -16,36 +16,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from .nifti import gen_volume_regions
-
-
-class NamedPoints():
-    def __init__(self, fl):
-        data = np.genfromtxt(fl, dtype=None)
-        self.xyz = np.array([[l[1], l[2], l[3]] for l in data])
-        self.names = [l[0].decode('ascii') for l in data]
-
-class Contacts(NamedPoints):
-    contact_name_regex = re.compile("^([A-Za-z]+[']?)([0-9]+)$")
-
-    def __init__(self, filename):
-        super().__init__(filename)
-        self.electrodes = {}
-        for i, name in enumerate(self.names):
-            match = self.contact_name_regex.match(name)
-            if match is None:
-                raise ValueError("Unexpected contact name %s" % name)
-
-            elec_name, _ = match.groups()
-            if elec_name not in self.electrodes:
-                self.electrodes[elec_name] = []
-            self.electrodes[elec_name].append(i)
-
-    def get_elec(self, name):
-        match = self.contact_name_regex.match(name)
-        if match is None:
-            return None
-
-        return match.groups()[0]
+from .elecs import NamedPoints, Contacts
 
 
 def seeg_elecs(tvbzip_file, seegxyz, out_fig):
