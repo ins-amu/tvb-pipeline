@@ -60,6 +60,13 @@ def _process_one_fif(js, cfg):
     return picks, slp, raw.ch_names
 
 
+def _process_one_bids_vhdr(vhdrname, cfg):
+    raw = mne.io.read_raw_brainvision(vhdrname, preload=True)
+    raw = raw.pick_types(meg=False, eeg=True)
+    slp = compute_raw_slp(raw, cfg)
+    return set(raw.ch_names), slp, raw.ch_names
+
+
 def _load_js(js_fname: os.PathLike) -> dict:
     with open(js_fname, 'r') as fd:
         js = json.load(fd)
@@ -85,12 +92,28 @@ def _many_picks_intersection(many_picks: [set]):
     return first
 
 
-def read_all_fif(subj_proc_dir, cfg: dict):
+def _is_bids(subj_proc_dir):
+    # return True if no fifs found (not great, but..)
+    return len(list(_read_all_jsons(subj_proc_dir))) == 0
+
+
+def _find_vhdrs(subj_proc_dir):
+    subj_id = os.path.basename(subj_proc_dir)
+    raw_path = os.path.join(subj_proc_dir, '..', '..', '0-Raw', subj_id)
+    vhdr_pattern = os.path.join(raw_path, '*/ieeg/*run-01*.vhdr')
+    return glob.glob(vhdr_pattern)
+
+
+def read_all_seeg_data(subj_proc_dir, cfg: dict):
     # read all datasets
     data = []
-    for js in _read_all_jsons(subj_proc_dir):
-        if _is_seizure(js):
-            data.append(_process_one_fif(js, cfg))
+    if _is_bids(subj_proc_dir):
+        for vhdr in _find_vhdrs(subj_proc_dir):
+            data.append(_process_one_bids_vhdr(vhdr, cfg))
+    else:
+        for js in _read_all_jsons(subj_proc_dir):
+            if _is_seizure(js):
+                data.append(_process_one_fif(js, cfg))
     picks, slps, chs = zip(*data)
     # find intersection of channels across datasets
     picks = _many_picks_intersection(picks)
