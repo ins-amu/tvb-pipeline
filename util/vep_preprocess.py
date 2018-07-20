@@ -85,9 +85,9 @@ def _read_all_jsons(subj_proc_dir):
         yield _load_js(match)
 
 
-def _many_picks_intersection(many_picks: [set]):
-    first, *rest = many_picks
-    for next in rest:
+def _many_picks_intersection(many_picks: [set], gain_labels: set):
+    first = gain_labels
+    for next in many_picks:
         first = first.intersection(next)
     return first
 
@@ -104,7 +104,7 @@ def _find_vhdrs(subj_proc_dir):
     return glob.glob(vhdr_pattern)
 
 
-def read_all_seeg_data(subj_proc_dir, cfg: dict):
+def read_all_seeg_data(subj_proc_dir, gain_labels, cfg: dict):
     # read all datasets
     data = []
     if _is_bids(subj_proc_dir):
@@ -116,7 +116,7 @@ def read_all_seeg_data(subj_proc_dir, cfg: dict):
                 data.append(_process_one_fif(js, cfg))
     picks, slps, chs = zip(*data)
     # find intersection of channels across datasets
-    picks = _many_picks_intersection(picks)
+    picks = _many_picks_intersection(picks, gain_labels)
     # remap data consistently
     slps_ = []
     is_first_ = []  # 1 if first samp of seizure
@@ -162,7 +162,9 @@ def build_data(subj_proc_dir, cfg=None):
     counts_triu, roi_names = read_weights(subj_proc_dir)
     gain = read_gain(subj_proc_dir)
     seeg_xyz = read_seeg_xyz(subj_proc_dir)
-    picks, slp, ch_names, is_first = read_all_fif(subj_proc_dir, cfg)
+    seeg_xyz_names = set([label for label, _ in seeg_xyz])
+    picks, slp, ch_names, is_first = read_all_seeg_data(
+        subj_proc_dir, seeg_xyz_names, cfg)
     gain_pick = np.array(
         [i for i, (label, _) in enumerate(seeg_xyz) if label in picks])
     gain = gain[gain_pick]
@@ -219,7 +221,8 @@ def plot_dataset(subj_proc_dir, data):
     # TODO more informative ticks/labels
     pl.figure(figsize=(10, 6))
     pl.subplot(121)
-    pl.imshow(data['seeg'], vmin=8, vmax=14, aspect='auto', cmap='binary')
+    pl.imshow(data['seeg'], vmin=8, vmax=14,
+              aspect='auto', cmap='binary')
     for ft in np.argwhere(data['is_first'])[:, 0]:
         pl.axvline(ft, color='r')
     pl.title('Concatenated Seizures')
