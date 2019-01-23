@@ -4,5 +4,3 @@ OAR*
 license.txt
 __pycache__
 *.pyc
-
-util/read_eeg.py
