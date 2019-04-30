@@ -1,0 +1,95 @@
+# -------------------------------------------------------------------------------------------------------- #
+# Operations:
+#   merge   reg1,reg2,...,regN  newreg
+#   rename  reg  newreg
+#   split   reg  newreg1,newreg2,...newregN  [factor1,factor2,...factorN]
+#   splitnl reg  newreg1,newreg2,...newregN  [factor1,factor2,...factorN]
+#
+# Wildcards:
+#    %h             Hemisphere ("lh" and "rh")
+#    %H             Hemisphere ("Left" and "Right")
+#    %0,%1,...,%9   Temporary regions, to be used and removed in subsequent operations.
+#                   It is the users responsibility to remove all of them (typically by merge operation)
+# --------------------------------------------------------------------------------------------------------- #
+
+# Merge operations
+
+merge   ctx_%h_G_and_S_frontomargin,ctx_%h_G_and_S_transv_frontopol                         %H-Frontal-pole
+merge   ctx_%h_G_orbital,ctx_%h_S_orbital_lateral,ctx_%h_S_orbital-H_Shaped                 %H-Orbito-frontal-Cortex
+merge   ctx_%h_G_rectus,ctx_%h_S_suborbital,ctx_%h_S_orbital_med-olfact                     %H-Gyrus-rectus
+merge   ctx_%h_G_front_inf-Orbital,ctx_%h_Lat_Fis-ant-Horizont                              %H-F3-Pars-Orbitalis
+merge   ctx_%h_G_front_inf-Triangul,ctx_%h_Lat_Fis-ant-Vertical                             %H-F3-Pars-triangularis
+merge   ctx_%h_S_circular_insula_ant,ctx_%h_S_circular_insula_sup,ctx_%h_G_insular_short    %H-Insula-gyri-brevi
+merge   ctx_%h_G_Ins_lg_and_S_cent_ins,ctx_%h_S_circular_insula_inf                         %H-Insula-gyri-longi
+merge   ctx_%h_G_temp_sup-G_T_transv,ctx_%h_S_temporal_transverse                           %H-Gyrus-of-Heschl
+merge   ctx_%h_Lat_Fis-post,ctx_%h_G_temp_sup-Plan_tempo                                    %H-T1-planum-temporale
+merge   ctx_%h_G_occipital_sup,ctx_%h_S_oc_sup_and_transversal                              %H-O1
+merge   ctx_%h_G_precuneus,ctx_%h_S_subparietal                                             %H-Precuneus
+merge   ctx_%h_Pole_occipital,ctx_%h_S_oc_middle_and_Lunatus                                %H-Occipital-pole
+
+
+# Rename operations
+
+rename  ctx_%h_G_front_inf-Opercular               %H-F3-pars-opercularis
+rename  ctx_%h_S_front_inf                         %H-Inferior-frontal-sulcus
+rename  ctx_%h_S_front_middle                      %H-Middle-frontal-sulcus
+rename  ctx_%h_G_subcallosal                       %H-Subcallosal-area-BA13
+rename  ctx_%h_G_and_S_cingul-Ant                  %H-Anterior-cingulate-cortex-BA32
+rename  ctx_%h_G_and_S_cingul-Mid-Ant              %H-Middle-cingulate-cortex-anterior-part-BA24
+rename  ctx_%h_G_and_S_cingul-Mid-Post             %H-Middle-cingulate-cortex-posterior-part-BA23
+rename  ctx_%h_S_precentral-inf-part               %H-Precentral-sulcus-inferior-part
+rename  ctx_%h_S_precentral-sup-part               %H-Precentral-sulcus-superior-part
+rename  ctx_%h_G_and_S_paracentral                 %H-Paracentral-lobule
+rename  ctx_%h_Pole_temporal                       %H-Temporal-pole
+rename  ctx_%h_G_temp_sup-Plan_polar               %H-T1-planum-polare
+rename  ctx_%h_S_oc-temp_lat                       %H-Occipito-temporal-sulcus
+rename  ctx_%h_G_oc-temp_lat-fusifor               %H-Fusiform-gyrus
+rename  ctx_%h_G_postcentral                       %H-Postcentral-gyrus
+rename  ctx_%h_S_postcentral                       %H-Postcentral-sulcus
+rename  ctx_%h_G_parietal_sup                      %H-Superior-parietal-lobule-P1
+rename  ctx_%h_G_pariet_inf-Angular                %H-Angular-gyrus
+rename  ctx_%h_S_intrapariet_and_P_trans           %H-Intraparietal-sulcus
+rename  ctx_%h_S_cingul-Marginalis                 %H-Marginal-branch-of-the-cingulate-sulcus
+rename  ctx_%h_G_cingul-Post-dorsal                %H-Posterior-cingulate-cortex-dorsal
+rename  ctx_%h_G_cingul-Post-ventral               %H-Posterior-cingulate-cortex-retrosplenial-gyrus
+rename  ctx_%h_S_parieto_occipital                 %H-Parieto-occipital-sulcus
+rename  ctx_%h_S_occipital_ant                     %H-Anterior-occipital-sulcus-and-preoccipital-notch
+rename  ctx_%h_G_and_S_occipital_inf               %H-O3
+rename  ctx_%h_G_occipital_middle                  %H-O2
+rename  ctx_%h_G_oc-temp_med-Lingual               %H-Lingual-gyrus
+rename  ctx_%h_S_calcarine                         %H-Calcarine-sulcus
+rename  ctx_%h_G_cuneus                            %H-Cuneus
+rename  %H-Cerebellum-Cortex                       %H-Cerebellar-cortex
+rename  %H-Thalamus-Proper                         %H-Thalamus
+rename  %H-Caudate                                 %H-Caudate-nucleus
+rename  %H-Accumbens-area                          %H-Nucleus-accumbens
+
+
+# Split operations
+
+split   ctx_%h_G_front_middle                      %H-F2-rostral,%H-F2-caudal
+split   ctx_%h_S_front_sup                         %H-SFS-rostral,%H-SFS-caudal
+split   ctx_%h_S_central                           %H-Central-sulcus-head-face,%H-Central-sulcus-upper-limb
+split   ctx_%h_G_and_S_subcentral                  %H-Central-operculum,%H-Parietal-operculum
+split   ctx_%h_G_temp_sup-Lateral                  %H-T1-lateral-anterior,%H-T1-lateral-posterior
+split   ctx_%h_S_temporal_sup                      %H-STS-anterior,%H-STS-posterior
+split   ctx_%h_S_temporal_inf                      %H-ITS-anterior,%H-ITS-posterior
+split   ctx_%h_G_temporal_middle                   %H-T2-anterior,%H-T2-posterior
+split   ctx_%h_G_temporal_inf                      %H-T3-anterior,%H-T3-posterior
+split   %H-Hippocampus                             %H-Hippocampus-anterior,%H-Hippocampus-posterior
+
+split   ctx_%h_G_front_sup                         %H-F1-prefrontal,%H-preSMA,%H-SMA   2,1,3
+split   ctx_%h_G_precentral                        %H-Precentral-gyrus-head-face,%H-Precentral-gyrus-upper-limb    2,1
+splitnl ctx_%h_S_pericallosal                      %H-Anterior-cingulate-cortex,%H-Middle-cingulate-cortex-anterior,%H-Middle-cingulate-cortex-posterior,%H-Posterior-cingulate-cortex-dorsal,%H-Posterior-cingulate-cortex-retrosplenial-gyrus
+
+
+# Split and merge operations
+
+split     ctx_%h_S_oc-temp_med_and_Lingual         %H-Collateral-sulcus,%1
+merge     %1,ctx_%h_S_collat_transv_post           %H-Lingual-sulcus
+
+split     ctx_%h_G_oc-temp_med-Parahip             %1,%H-Parahippocampal-cortex
+merge     %1,ctx_%h_S_collat_transv_ant            %H-Rhinal-cortex
+
+split     ctx_%h_G_pariet_inf-Supramar             %H-Supramarginal-gyrus-superior-BA40,%1
+merge     %1,ctx_%h_S_interm_prim-Jensen           %H-Supramarginal-gyrus-inferior-BA39
