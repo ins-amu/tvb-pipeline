@@ -7,14 +7,17 @@ import numpy as np
 import pandas as pd
 
 from convert_to_vep_parc import load_rules, expand_wildcards_hemisphere
+from convert_to_vep_parc import SHIFT_LH, SHIFT_RH
 
-SHIFT_LH = 70000
-SHIFT_RH = 71000
 
-def create_vep_fs_lut(fs_lut, vep_rules, vep_fs_lut):
-    fsregs = list(np.genfromtxt(fs_lut, usecols=(1,), dtype=str))
-    rules = load_rules(vep_rules)
+def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
+                vep_fs_lut_file, vep_mrtrix_lut_file, vep_subcort_file, vep_aparc_lut_file):
 
+    # Load original table
+    fs_regs = list(np.genfromtxt(fs_lut_file, usecols=(1,), dtype=str))
+
+    # Load rules
+    rules = load_rules(vep_rules_file)
     newregs = []
     for rule in rules:
         if rule[0] in ["merge", "rename"]:
@@ -24,81 +27,94 @@ def create_vep_fs_lut(fs_lut, vep_rules, vep_fs_lut):
 
     # Filter temp regions
     newregs = [reg for reg in newregs if reg not in ["%%%d" % i for i in range(10)]]
-
     assert all(["%H" in reg for reg in newregs])
 
-    np.random.seed(42)
-    colors = np.random.choice(256, (1000, 3))
+    vep_regs = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=str)
+    vep_iscort = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=int).astype(bool)
 
-    regsl = [reg.replace("%H", "Left") for reg in newregs]
-    regsr = [reg.replace("%H", "Right") for reg in newregs]
+    # Make sure that every cortical region is in rules
+    for reg in vep_regs[vep_iscort]:
+        assert ("%%H-%s" % reg) in newregs
+
+    # Make sure that every subcortical region is either in rules or in Freesurfer table
+    for reg in vep_regs[~vep_iscort]:
+        assert ("%H-"+reg in newregs) or (("Left-"+reg in fs_regs) and ("Right-"+reg in fs_regs))
+
+
+    # Make sure all subcortical regions are at the end
+    assert np.all(vep_iscort[:-1] >= vep_iscort[1:])
+
+    create_vep_fs_lut(vep_regs, fs_regs, fs_lut_file, vep_fs_lut_file)
+    create_vep_mrtrix_lut(vep_regs, vep_fs_lut_file, vep_mrtrix_lut_file)
+    create_subcort_list(vep_regs[~vep_iscort], vep_fs_lut_file, vep_subcort_file)
+    create_parc_lut(vep_regs[vep_iscort], vep_fs_lut_file, vep_aparc_lut_file)
+
+
+def create_parc_lut(vep_regs, vep_fs_lut_file, vep_aparc_lut_file):
+    names = list(np.genfromtxt(vep_fs_lut_file, usecols=(1,), dtype=str))
+    colors = np.genfromtxt(vep_fs_lut_file, usecols=(2,3,4,5), dtype=int)
+
+    with open(vep_aparc_lut_file, 'w') as fl:
+        fl.write("  0 %-60s   0   0   0   0\n" % "Unknown")
+        for i, reg in enumerate(vep_regs):
+            ind = names.index("Left-" + reg)
+            fl.write("%3d %-60s %3d %3d %3d %3d\n" % (i+1, reg, *colors[ind]))
+
+
+def create_vep_fs_lut(vep_regs, fs_regs, fs_lut_file, vep_fs_lut_file):
+    regsl = ["Left-"+reg  for reg in vep_regs]
+    regsr = ["Right-"+reg for reg in vep_regs]
 
     # Filter existing regions
-    regsl = [reg for reg in regsl if reg not in fsregs]
-    regsr = [reg for reg in regsr if reg not in fsregs]
+    regsl = [reg for reg in regsl if reg not in fs_regs]
+    regsr = [reg for reg in regsr if reg not in fs_regs]
 
-    with open(fs_lut) as fl:
+    # Get random, distinct colors
+    np.random.seed(42)
+    colors = [(a % 2**8, (a % 2**16) // 2**8, (a % 2**24) // 2**16)
+              for a in np.random.choice(2**24, len(vep_regs), replace=False)]
+
+
+    with open(fs_lut_file) as fl:
         lines = fl.readlines()
-    with open(vep_fs_lut, "w") as fl:
+    with open(vep_fs_lut_file, "w") as fl:
         fl.writelines(lines)
         fl.write("\n\n#\n# Labels for the VEP parcellation\n#\n\n")
 
         for regs, hnum in [(regsl, SHIFT_LH), (regsr, SHIFT_RH)]:
             for i, reg in enumerate(regs):
-                fl.write("%5d  %-60s %3d %3d %3d  0\n" % (hnum + i + 1, reg,
-                                                          colors[i, 0], colors[i, 1], colors[i, 2]))
+                fl.write("%5d  %-60s %3d %3d %3d  0\n" % (hnum + i + 1, reg, *colors[i]))
 
 
-def create_vep_mrtrix_lut(vep_fs_lut, vep_regions_file, vep_mrtrix_lut):
-    names = list(np.genfromtxt(vep_fs_lut, usecols=(1,), dtype=str))
-    colors = np.genfromtxt(vep_fs_lut, usecols=(2,3,4,5), dtype=int)
-    regions = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=str)
+def create_vep_mrtrix_lut(vep_regs, vep_fs_lut_file, vep_mrtrix_lut_file):
+    names = list(np.genfromtxt(vep_fs_lut_file, usecols=(1,), dtype=str))
+    colors = np.genfromtxt(vep_fs_lut_file, usecols=(2,3,4,5), dtype=int)
 
-    with open(vep_mrtrix_lut, 'w') as fl:
+    with open(vep_mrtrix_lut_file, 'w') as fl:
         fl.write("   0   %-60s  0   0   0   0\n" % ("Unknown") )
         i = 1
-        for reg in regions:
-            ind = names.index(reg)
-            fl.write("%4d   %-60s  %4d %4d %4d %4d\n" % (i, reg, *colors[ind]))
-            i += 1
+        for hemi in ['Left', 'Right']:
+            for reg in vep_regs:
+                regname = hemi + "-" + reg
+                ind = names.index(regname)
+                fl.write("%4d   %-60s  %4d %4d %4d %4d\n" % (i, regname, *colors[ind]))
+                i += 1
 
-def create_subcort_list(vep_fs_lut, vep_regions_file, vep_subcort_list):
+
+def create_subcort_list(vep_subcort_regions, vep_fs_lut, vep_subcort_list):
     fs_names = list(np.genfromtxt(vep_fs_lut, usecols=(1,), dtype=str))
     fs_inds = np.genfromtxt(vep_fs_lut, usecols=(0,), dtype=int)
-
-    vep_names = list(np.genfromtxt(vep_regions_file, usecols=(0,), dtype=str))
-    vep_iscort = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=int).astype(bool)
 
     with open(vep_subcort_list, 'w') as fl:
-        for name, iscort in zip(vep_names, vep_iscort):
-            if not iscort:
+        for hemi in ['Left', 'Right']:
+            for reg in vep_subcort_regions:
+                name = hemi + "-" + reg
                 fl.write("%d\n" % fs_inds[fs_names.index(name)])
-
-
-
-def create_parc_lut(vep_fs_lut, vep_regions_file, vep_parc_lut):
-    fs_names = list(np.genfromtxt(vep_fs_lut, usecols=(1,), dtype=str))
-    fs_inds = np.genfromtxt(vep_fs_lut, usecols=(0,), dtype=int)
-
-    vep_names = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=str)
-    vep_iscort = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=int).astype(bool)
-
-    # Without hemisphere
-    names = [reg[5:] for reg in vep_names[vep_iscort] if reg[:5] == "Left-"]
-
-    # Just check
-    # assert all([fs_inds[fs_names.index("Left-%s" % names[i])] == SHIFT_LH + i + 1 for i in range(len(names))])
-    # for i, name in enumerate(names):
-    #    if fs_inds[fs_names.index("Left-%s" % name)] != SHIFT_LH + i + 1:
-    #        print(name, i)
-
 
 
 
 
 if __name__ == "__main__":
-    # create_vep_fs_lut("data/FreeSurferColorLUT.txt", "data/VepAtlasRules.txt", "data/VepFreeSurferColorLut.txt")
-    # create_vep_mrtrix_lut("data/VepFreeSurferColorLut.txt", "data/VepRegions.txt", "data/lut.vep.txt")
-    # create_subcort_list("data/VepFreeSurferColorLut.txt", "data/VepRegions.txt", "data/subcort.vep.txt")
-
-    create_parc_lut("data/VepFreeSurferColorLut.txt", "data/VepRegions.txt", "data/VepAparcColorLut.txt")
+    create_luts("data/FreeSurferColorLUT.txt", "data/VepAtlasRules.txt", "data/VepRegions.txt",
+                "data/VepFreeSurferColorLut.txt", "data/VepMrtrixLut.txt", "data/subcort.vep.txt",
+                "data/VepAparcColorLut.txt")

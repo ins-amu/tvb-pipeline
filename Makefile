@@ -8,7 +8,6 @@ resamp_target ?= fsaverage5
 resamp_parc ?= aparc.a2009s
 resamp_sval ?= pial
 elec_mode ?= CT
-lut_fs := $(FREESURFER_HOME)/FreeSurferColorLUT.txt
 # }}}
 
 # default data layout {{{
@@ -40,7 +39,12 @@ rtd = $(SUBJECTS_DIR)/$(resamp_target)
 fs_done = $(sd)/mri/aparc+aseg.mgz
 here := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 export PYTHONPATH:=$(here):$(PYTHONPATH)
+lut_fs := $(here)/util/data/VepFreeSurferColorLut.txt
 # }}}
+
+
+# Keep all intermediate files
+.SECONDARY:
 
 .PHONY: fs_recon resamp-anat dwi seeg tvb clean mrinfo # {{{
 default:
@@ -48,18 +52,21 @@ default:
 fs-recon: $(fs_done)
 resamp-anat: $(sd)/surf/lh.$(resamp_sval).$(resamp_target) $(sd)/surf/rh.$(resamp_sval).$(resamp_target)
 tck: $(sd)/dwi/100k.tck
-conn: $(sd)/dwi/counts.dk.txt        $(sd)/dwi/lengths.dk.txt  \
-	  $(sd)/dwi/counts.destrieux.txt $(sd)/dwi/lengths.destrieux.txt
-conn_label: $(sd)/dwi/label_in_T1.dk.nii.gz $(sd)/dwi/label_in_T1.destrieux.nii.gz
+conn: $(sd)/dwi/counts.dk.txt        $(sd)/dwi/lengths.dk.txt        \
+	  $(sd)/dwi/counts.destrieux.txt $(sd)/dwi/lengths.destrieux.txt \
+	  $(sd)/dwi/counts.vep.txt       $(sd)/dwi/lengths.vep.txt
+conn_label: $(sd)/dwi/label_in_T1.dk.nii.gz $(sd)/dwi/label_in_T1.destrieux.nii.gz $(sd)/dwi/label_in_T1.vep.nii.gz
 labeled_elec: $(sd)/elec/labeled_elec-$(elec_mode).nii.gz
 elec: $(sd)/elec/seeg.xyz $(sd)/elec/img \
-      $(sd)/elec/elec.dk.png $(sd)/elec/elec.destrieux.png \
-      $(sd)/elec/gain_dipole_no-subcort.dk.txt $(sd)/elec/gain_dipole_no-subcort.destrieux.txt \
-	  $(sd)/elec/gain_inv-square.dk.txt        $(sd)/elec/gain_inv-square.destrieux.txt
-tvb: $(sd)/tvb/connectivity.dk.zip         $(sd)/tvb/img/connectivity.dk.png \
-     $(sd)/tvb/connectivity.destrieux.zip  $(sd)/tvb/img/connectivity.destrieux.png
-ez: $(sd)/tvb/ez_hypothesis.dk.txt         $(sd)/tvb/img/ez_hypothesis.dk.png \
-	$(sd)/tvb/ez_hypothesis.destrieux.txt  $(sd)/tvb/img/ez_hypothesis.destrieux.png
+      $(sd)/elec/elec.dk.png        $(sd)/elec/gain_dipole_no-subcort.dk.txt        $(sd)/elec/gain_inv-square.dk.txt        \
+      $(sd)/elec/elec.destrieux.png $(sd)/elec/gain_dipole_no-subcort.destrieux.txt $(sd)/elec/gain_inv-square.destrieux.txt \
+      $(sd)/elec/elec.vep.png       $(sd)/elec/gain_dipole_no-subcort.vep.txt       $(sd)/elec/gain_inv-square.vep.txt
+tvb: $(sd)/tvb/connectivity.dk.zip         $(sd)/tvb/img/connectivity.dk.png          \
+     $(sd)/tvb/connectivity.destrieux.zip  $(sd)/tvb/img/connectivity.destrieux.png   \
+     $(sd)/tvb/connectivity.vep.zip        $(sd)/tvb/img/connectivity.vep.png
+ez: $(sd)/tvb/ez_hypothesis.dk.txt         $(sd)/tvb/img/ez_hypothesis.dk.png         \
+	$(sd)/tvb/ez_hypothesis.destrieux.txt  $(sd)/tvb/img/ez_hypothesis.destrieux.png  \
+    $(sd)/tvb/ez_hypothesis.vep.txt        $(sd)/tvb/img/ez_hypothesis.vep.png
 vep: $(sd)/vep/data.R
 
 mrinfo:

@@ -89,3 +89,6 @@ $(sd)/dwi/lut.dk.txt:
 
 $(sd)/dwi/lut.destrieux.txt:
 	cp `find $(MRT3) -name fs_a2009s.txt | head -n 1` $@ $(dwi_log)
+
+$(sd)/dwi/lut.vep.txt:
+	cp $(here)/util/data/VepMrtrixLut.txt $@ $(dwi_log)

@@ -1,33 +1,33 @@
 #!/usr/bin/env python3
 
 import enum
-import numpy as np
 import os
-import os.path
 import logging
 import re
 import subprocess
 import sys
 import tempfile
 import time
+import glob
 from typing import List, Optional
 import unittest
 from zipfile import ZipFile
+
+import numpy as np
 
 import nibabel.freesurfer.io
 
 
 """ For each parcellation, following tuple is supplied:
 (
-  Annotation file name (without the hemisphere label),
   Left hemisphere shift in LUT,
-  Right hemishere shift in LUT,
-  Indices of subcortical regions in the original look up table
+  Right hemishere shift in LUT
 )
 """
-PARCELLATIONS = {
-    'dk':        (".aparc.annot",         1000,  2000, [8, 10, 11, 12, 13, 16, 17, 18, 26, 47, 49, 50, 51, 52, 53, 54, 58]),
-    'destrieux': (".aparc.a2009s.annot", 11100, 12100, [8, 10, 11, 12, 13, 16, 17, 18, 26, 47, 49, 50, 51, 52, 53, 54, 58])
+PARC_SHIFTS = {
+    'dk':        ( 1000,  2000),
+    'destrieux': (11100, 12100),
+    'vep':       (70000, 71000)
 }
 
 
@@ -392,7 +392,6 @@ def pial_to_verts_and_triangs(pial_surf) -> (np.ndarray, np.ndarray):
     return vertices, triangles
 
 
-
 def read_cortical_region_mapping(label_direc: os.PathLike, hemisphere: Hemisphere, fs_to_conn: RegionIndexMapping,
                                  parcellation) -> np.ndarray:
     """
@@ -406,9 +405,10 @@ def read_cortical_region_mapping(label_direc: os.PathLike, hemisphere: Hemispher
     (hemisphere and parcellation dependent) is necessary. Ugh.
     """
 
-    parc_file, lut_lh_shift, lut_rh_shift, _ = PARCELLATIONS[parcellation]
+    lut_lh_shift, lut_rh_shift = PARC_SHIFTS[parcellation]
 
-    filename = os.path.join(label_direc, hemisphere.value + parc_file)
+    parc_file = "%s.aparc.%s.annot" % (hemisphere.value, parcellation)
+    filename = os.path.join(label_direc, parc_file)
     region_mapping, _, _ = nibabel.freesurfer.io.read_annot(filename)
 
     region_mapping[region_mapping == -1] = 0   # Unknown regions in hemispheres
@@ -443,11 +443,12 @@ def get_subcortical_surfaces(subcort_surf_direc: os.PathLike, region_index_mappi
                              parcellation: str) -> Surface:
     surfaces = []
 
-    _, _, _, subcortical_region_inds = PARCELLATIONS[parcellation]
+    subcort_surf_files = glob.glob(os.path.join(subcort_surf_direc, "aseg_*.srf"))
 
-    for fs_idx in subcortical_region_inds:
+    for filename in subcort_surf_files:
+        match = re.match("^aseg_(\d+).srf$", os.path.split(filename)[1])
+        fs_idx = int(match.group(1))
         conn_idx = region_index_mapping.source_to_target(fs_idx)
-        filename = os.path.join(subcort_surf_direc, 'aseg_%03d.srf' % fs_idx)
         with open(filename, 'r') as f:
             f.readline()
             nverts, ntriangs = [int(n) for n in f.readline().strip().split(' ')]
@@ -543,7 +544,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
                        for each <NUM> in SUBCORTICAL_REG_INDS
     source_lut: File with the color look-up table used for the original parcellation
     target_lut: File with the color look-up table used for the connectome generation
-    parcellation: Parcellation type, currently either 'dk' or 'destrieux'
+    parcellation: Parcellation type, currently either 'dk', 'destrieux', or 'vep'
     weights_file: text file with weights matrix (which should be upper triangular)
     tract_lengths_file: text file with tract length matrix (which should be upper triangular)
     struct_zip_file: zip file containing TVB structural dataset to be created
@@ -571,6 +572,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
 
     for region_params, is_cortical in [(region_params_subcort, False), (region_params_cort, True)]:
         regions, reg_areas, reg_orientations, reg_centers = region_params
+
         orientations[regions, :] = reg_orientations
         areas[regions] = reg_areas
         centers[regions, :] = reg_centers
@@ -624,7 +626,7 @@ def main():
     create_tvb_dataset(
         os.path.join(subject_dir, "surf"),
         os.path.join(subject_dir, "label"),
-        os.path.join(subject_dir, "aseg2srf"),
+        os.path.join(subject_dir, "aseg2srf", parcellation),
         source_lut,
         target_lut,
         parcellation,

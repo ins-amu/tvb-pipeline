@@ -7,6 +7,8 @@ import numpy as np
 import nibabel as nib
 from sklearn.manifold import Isomap
 
+SHIFT_LH = 70000
+SHIFT_RH = 71000
 
 class ColorLut():
     """Color look-up table"""
@@ -212,55 +214,24 @@ def convert_to_vep_parc(destrieux_file, lut_file, rules_file, vep_file):
     nib.save(mgz_vep, vep_file)
 
 
-def aparcaseg_to_aparc(aparcaseg_file, fs_lut_file, region_file, aparc_file, aparc_lut):
+def aparcaseg_to_aparc(aparcaseg_file, parc_lut_file, region_file, aparc_file, aparc_lut):
     mgz_apas = nib.load(aparcaseg_file)
-    lut_inds  = np.genfromtxt(fs_lut_file, usecols=(0,), dtype=int)
-    lut_names = list(np.genfromtxt(fs_lut_file, usecols=(1,), dtype=str))
+    lut_inds  = np.genfromtxt(parc_lut_file, usecols=(0,), dtype=int)
+    lut_names = list(np.genfromtxt(parc_lut_file, usecols=(1,), dtype=str))
     reg_names = np.genfromtxt(region_file, usecols=(0,), dtype=str)
     reg_iscort = np.genfromtxt(region_file, usecols=(1,), dtype=int).astype(bool)
 
     labels_old = mgz_apas.get_data()
     labels_new = np.zeros_like(labels_old)
 
-    # for name, iscort in zip(reg_names, reg_iscort):
     for i, name in enumerate(reg_names[reg_iscort]):
-        if iscort:
-            ind = lut_inds[lut_names.index(name)]
-            labels_new[labels_old == ind] = ind
+        ind = lut_inds[lut_names.index(name)]
+        labels_new[labels_old == ind + SHIFT_LH] = ind
+        labels_new[labels_old == ind + SHIFT_RH] = ind
+
     mgz_ap = nib.freesurfer.mghformat.MGHImage(labels_new, mgz_apas.affine, mgz_apas.header)
     nib.save(mgz_ap, aparc_file)
 
-
-# def aparcaseg_to_aparc(aparcaseg_file, aparc_lut, aparc_file, aparc_lut):
-#     mgz_apas = nib.load(aparcaseg_file)
-
-
-
-
-#     lut_inds  = np.genfromtxt(fs_lut_file, usecols=(0,), dtype=int)
-#     lut_names = list(np.genfromtxt(fs_lut_file, usecols=(1,), dtype=str))
-#     reg_names = np.genfromtxt(region_file, usecols=(0,), dtype=str)
-#     reg_iscort = np.genfromtxt(region_file, usecols=(1,), dtype=int).astype(bool)
-
-#     labels_old = mgz_apas.get_data()
-#     labels_new = np.zeros_like(labels_old)
-
-#     # for name, iscort in zip(reg_names, reg_iscort):
-#     for i, name in enumerate(reg_names[reg_iscort]):
-#         if iscort:
-#             ind = lut_inds[lut_names.index(name)]
-#             labels_new[labels_old == ind] = ind
-#     mgz_ap = nib.freesurfer.mghformat.MGHImage(labels_new, mgz_apas.affine, mgz_apas.header)
-#     nib.save(mgz_ap, aparc_file)
-
-#     # Parcellation LUT
-#     labels =
-
-
-
-
-# if __name__ == "__main__":
-#     convert_to_vep_parc(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
 
 if __name__ == '__main__':

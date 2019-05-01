@@ -26,7 +26,9 @@
 # }}}
 
 # TVB compatible files {{{
-$(sd)/tvb/connectivity.%.zip: $(fs_done) $(sd)/dwi/triu_counts.%.txt $(sd)/dwi/triu_lengths.%.txt $(sd)/dwi/lut.%.txt $(sd)/aseg2srf
+$(sd)/tvb/connectivity.%.zip: $(fs_done) $(sd)/dwi/triu_counts.%.txt $(sd)/dwi/triu_lengths.%.txt \
+                              $(sd)/dwi/lut.%.txt $(sd)/aseg2srf/%                                \
+                              $(sd)/label/lh.aparc.%.annot $(sd)/label/rh.aparc.%.annot
 	mkdir -p $(sd)/tvb
 	mris_convert $(sd)/surf/lh.pial $(sd)/surf/lh.pial.asc
 	mris_convert $(sd)/surf/rh.pial $(sd)/surf/rh.pial.asc

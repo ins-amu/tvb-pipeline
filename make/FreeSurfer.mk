@@ -45,12 +45,39 @@ $(sd)/surf/%.$(resamp_sval).$(resamp_target): $(rtd) $(fs_done)
 $(sd)/mri/$(aa).xyz: $(fs_done)
 	python -m util.util label_volume_centers $(sd)/mri/$(aa).mgz $@
 
-# generate subcortical region volume bounding surfaces
-$(sd)/aseg2srf: $(fs_done)
-	$(here)/util/aseg2srf -s $(SUBJECT)
-
 $(sd)/mri/aparc+aseg.dk.mgz: $(fs_done)
 	ln -sf ./aparc+aseg.mgz $@
 
 $(sd)/mri/aparc+aseg.destrieux.mgz: $(fs_done)
 	ln -sf ./aparc.a2009s+aseg.mgz $@
+
+$(sd)/label/%.aparc.dk.annot: $(fs_done)
+	cp $(sd)/label/$*.aparc.annot $@
+
+$(sd)/label/%.aparc.destrieux.annot: $(fs_done)
+	cp $(sd)/label/$*.aparc.a2009s.annot $@
+
+# VEP parcellation/segmentation
+
+$(sd)/mri/aparc+aseg.vep.mgz: $(sd)/mri/aparc+aseg.destrieux.mgz
+	python -m util.convert_to_vep_parc convert_to_vep_parc   \
+        $(sd)/mri/aparc+aseg.destrieux.mgz                   \
+	    $(lut_fs) $(here)/util/data/VepAtlasRules.txt  $@
+
+$(sd)/mri/aparc.vep.mgz: $(sd)/mri/aparc+aseg.vep.mgz
+	python -m util.convert_to_vep_parc aparcaseg_to_aparc                     \
+	    $(sd)/mri/aparc+aseg.vep.mgz $(here)/util/data/VepAparcColorLut.txt   \
+	    $(here)/util/data/VepRegions.txt                                      \
+	    $(sd)/mri/aparc.vep.mgz $(sd)/mri/aparc.lut.txt
+
+
+$(sd)/label/%.aparc.vep.annot: $(sd)/mri/aparc.vep.mgz
+	mris_sample_parc -ct $(here)/util/data/VepAparcColorLut.txt \
+       $(SUBJECT) $* aparc.vep.mgz $*.aparc.vep.annot
+
+
+# generate subcortical region volume bounding surfaces
+$(sd)/aseg2srf/%: $(sd)/mri/aparc+aseg.%.mgz
+	export UTILDIR=$(here)/util; \
+	$(here)/util/aseg2srf -s $(SUBJECT) -l $(here)/util/data/subcort.$*.txt \
+	    -a aparc+aseg.$*.mgz -o aseg2srf/$*
