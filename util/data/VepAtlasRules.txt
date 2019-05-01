@@ -80,7 +80,7 @@ split   %H-Hippocampus                             %H-Hippocampus-anterior,%H-Hi
 
 split   ctx_%h_G_front_sup                         %H-F1-prefrontal,%H-preSMA,%H-SMA   2,1,3
 split   ctx_%h_G_precentral                        %H-Precentral-gyrus-head-face,%H-Precentral-gyrus-upper-limb    2,1
-splitnl ctx_%h_S_pericallosal                      %H-Anterior-cingulate-cortex,%H-Middle-cingulate-cortex-anterior,%H-Middle-cingulate-cortex-posterior,%H-Posterior-cingulate-cortex-dorsal,%H-Posterior-cingulate-cortex-retrosplenial-gyrus
+splitnl ctx_%h_S_pericallosal                      %H-anterior-CS,%H-Posterior-CS-RetrosplenialG,%H-Middle_CS-Anterior,%H-posterior-CS-dorsal,%H-Middle_CS-Posterior
 
 
 # Split and merge operations
