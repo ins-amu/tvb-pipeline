@@ -83,7 +83,7 @@ clean:
 nothing:
 	echo "doing nothing for subject $(SUBJECT) per request"
 
-dag.png: Makefile make/FreeSurfer.mk make/Diffusion.mk make/StereoEEG.mk make/Stan.mk make/Utilities.mk
+dag.png: Makefile make/FreeSurfer.mk make/Diffusion.mk make/StereoEEG.mk make/VEP.mk make/Utilities.mk
 	mkdir -p dag/t1 dag/dwi dag/elec dag/seeg
 	touch dag/elec/pos_vox.txt dag/elec/elec.nii.gz dag/patient.xlsx
 	make -Bnd SUBJECTS_DIR=. SUBJECT=dag DATA=. \
