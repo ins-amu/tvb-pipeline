@@ -29,8 +29,8 @@ def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
     newregs = [reg for reg in newregs if reg not in ["%%%d" % i for i in range(10)]]
     assert all(["%H" in reg for reg in newregs])
 
-    vep_regs = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=str)
-    vep_iscort = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=int).astype(bool)
+    vep_regs = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=str)
+    vep_iscort = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=int).astype(bool)
 
     # Make sure that every cortical region is in rules
     for reg in vep_regs[vep_iscort]:

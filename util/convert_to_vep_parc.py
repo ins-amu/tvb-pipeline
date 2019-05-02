@@ -267,9 +267,9 @@ def convert_to_vep_parc(destrieux_file, lut_file, rules_file, vep_file):
         elif rule[0] == "splitnl":
             factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
             parc_split(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='isomap', factors=factors)
-        elif rule[0] == "splitbetween":
+        elif rule[0] == "splitto":
             parc_splitbetween(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='pca')
-        elif rule[0] == "splitbetweennl":
+        elif rule[0] == "splittonl":
             parc_splitbetween(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='isomap')
         else:
             raise ValueError("Unknown rule %s" % rule[0])
