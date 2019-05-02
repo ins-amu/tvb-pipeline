@@ -4,8 +4,8 @@
 #   rename          reg  newreg
 #   split           reg  newreg1,newreg2,...,newregN  [factor1,factor2,...factorN]
 #   splitnl         reg  newreg1,newreg2,...,newregN  [factor1,factor2,...factorN]
-#   splitbetween    reg  oldreg1,oldreg2,...,oldregN
-#   splitbetweennl  reg  oldreg1,oldreg2,...,oldregN
+#   splitto         reg  oldreg1,oldreg2,...,oldregN
+#   splittonl       reg  oldreg1,oldreg2,...,oldregN
 #
 # Wildcards:
 #    %h             Hemisphere ("lh" and "rh")
