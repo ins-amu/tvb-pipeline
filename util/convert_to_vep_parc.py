@@ -2,6 +2,7 @@
 
 
 import sys
+import warnings
 
 import numpy as np
 import nibabel as nib
@@ -56,6 +57,62 @@ def expand_wildcards_temp(rules):
     return new_rules
 
 
+def project_on_principal_axis(points):
+    """
+    Project all `points` (Nx3 array) on its principal axis.
+    The axis is set to be oriented to positive in its second component (anterior direction in RAS coordinates).
+    """
+
+    # find principal eigendirection
+    m_cov = np.dot(points.T, points)
+    w, vr = np.linalg.eig(m_cov)
+    eigendir = vr[:, np.argmax(w)]
+
+    # orient them from posterior to anterior
+    if eigendir[1] < 0:
+        eigendir *= -1
+
+    proj = np.dot(points, eigendir)
+    return proj, eigendir
+
+
+def find_interface_voxels(parc, regs):
+    """Return indices of all voxels on the interface of multiple regions
+
+    Straightforward and slow version.
+    """
+
+    # Add boundary layers
+    assert -1 not in regs
+    bparc = -1 * np.ones((parc.shape[0] + 2, parc.shape[1] + 2, parc.shape[2] + 2))
+    bparc[1:-1, 1:-1, 1:-1] = parc
+
+    # Possible voxels
+    mask = np.zeros_like(parc, dtype=bool)
+    for reg in regs:
+        mask[parc == reg] = True
+
+    # Get those on the interface
+    interface = []
+    for i, j, k in np.argwhere(mask):
+        neigh_regs = set([bparc[i+1,j+1,k+1],
+                          bparc[i  ,j+1,k+1],
+                          bparc[i+2,j+1,k+1],
+                          bparc[i+1,j  ,k+1],
+                          bparc[i+1,j+2,k+1],
+                          bparc[i+1,j+1,k  ],
+                          bparc[i+1,j+1,k+2]])
+        if all([reg in neigh_regs for reg in regs]):
+            interface.append((i, j, k))
+
+    return np.array(interface)
+
+
+    # Orient them from posterior to anterior
+    if np.mean(coords[:, 1][xcoords < 0.1]) > np.mean(coords[:, 1][xcoords > 0.9]):
+        xcoords = 1 - xcoords
+
+
 def parc_merge(parc, lut, regions_in, region_out):
     """
     In-place merging of several regions.
@@ -78,47 +135,16 @@ def parc_rename(parc, lut, region_in, region_out):
     parc_merge(parc, lut, [region_in], region_out)
 
 
-def parc_split(parc, affine, lut, region_in, regions_out, factors=None):
+def parc_split(parc, affine, lut, region_in, regions_out, method, factors=None):
     """
     In-place split of a single region along a anterior-posterior axis.
 
+    Method can be either:
+      'pca'     for split after a linear projection
+      'isomap'  for split after a nonlinear projection
+
     Regions in `regions_out` should be ordered in the anterior-posterior direction.
     If `factors` are missing, equal length split is performed.
-
-    Formerly `update_divid_multipul`
-    """
-
-    if factors is None:
-        factors = np.ones(len(regions_out), dtype=int)
-
-    assert len(regions_out) == len(factors)
-
-    inds = np.argwhere(parc == lut.name2ind[region_in])
-    indsl = np.nonzero(parc == lut.name2ind[region_in])  # Just a different format
-
-    coords = (affine.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
-    xcoords = project_on_principal_axis(coords)
-
-    limits = np.hstack([0, np.cumsum(factors)])
-    limits = limits/limits[-1]
-    # Better be careful about the floating point comparison
-    limits[0]  = -1
-    limits[-1] =  2
-
-
-    for region_out, xfr, xto in zip(reversed(regions_out), limits[:-1], limits[1:]):
-        ind_out = lut.name2ind[region_out]
-        imask = (xcoords >= xfr) * (xcoords < xto)
-        mask = [idxs[imask] for idxs in indsl]
-        parc[mask] = ind_out
-
-
-def parc_splitnl(parc, affine, lut, region_in, regions_out, factors=None):
-    """
-    In-place split split of a single region using a nonlinear embedding.
-
-    Regions in `regions_out` should be ordered in the anterior-posterior direction.
-    If `factors` are missing, equal length split (on the manifold) is performed.
     """
 
     if factors is None:
@@ -131,56 +157,93 @@ def parc_splitnl(parc, affine, lut, region_in, regions_out, factors=None):
 
     coords = (affine.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
 
-    isomap = Isomap(n_components=1, n_neighbors=10)
-    xcoords = isomap.fit_transform(coords)[:, 0]
+    if method == 'pca':
+        center = np.mean(coords, axis=0)
+        xcoords, _ = project_on_principal_axis(coords - center)
+    elif method == 'isomap':
+        isomap = Isomap(n_components=1, n_neighbors=20)
+        xcoords = isomap.fit_transform(coords)[:, 0]
+
+        isomap_ori = 1
+        if np.mean(coords[:, 1][xcoords < np.median(xcoords)]) > np.mean(coords[:, 1][xcoords > np.median(xcoords)]):
+            isomap_ori = -1
+        xcoords *= isomap_ori
+    else:
+        raise ValueError("Unknown method %s." % method)
 
     # Normalize
     xcoords -= np.min(xcoords)
     xcoords /= np.max(xcoords)
 
-    # Orient them from posterior to anterior
-    if np.mean(coords[:, 1][xcoords < 0.1]) > np.mean(coords[:, 1][xcoords > 0.9]):
-        xcoords = 1 - xcoords
-
-
-    limits = np.hstack([0, np.cumsum(factors)])
+    limits = np.hstack([-np.inf, np.cumsum(factors)])
     limits = limits/limits[-1]
-    # Better be careful about the floating point comparison
-    limits[0]  = -1
-    limits[-1] =  2
+    limits[-1] = np.inf
 
     for region_out, xfr, xto in zip(reversed(regions_out), limits[:-1], limits[1:]):
-        ind_out = lut.name2ind[region_out]
         imask = (xcoords >= xfr) * (xcoords < xto)
         mask = [idxs[imask] for idxs in indsl]
-        parc[mask] = ind_out
+        parc[mask] = lut.name2ind[region_out]
 
 
-
-def project_on_principal_axis(points):
+def parc_splitbetween(parc, affine, lut, region, regions_to, method):
     """
-    Project all `points` (Nx3 array) on its principal axis and normalize to [0; 1].
-    The axis is set to be oriented to positive in its second component (anterior direction in RAS coordinates).
+    In-place split of a single region between multiple other regions.
+    Method can be either:
+      'pca'     for split after a linear projection
+      'isomap'  for split after a nonlinear projection
+
+    `regions_to` should be ordered in the anterior-posterior direction.
     """
+    # Reorder posterior-anterior
+    regions_to = list(reversed(regions_to))
 
-    center = np.mean(points, axis=0)
-    centered_points = points - center
+    inds = np.argwhere(parc == lut.name2ind[region])
+    indsl = np.nonzero(parc == lut.name2ind[region])  # Just a different format
 
-    # find principal eigendirection
-    m_cov = np.dot(centered_points.T, centered_points)
-    w, vr = np.linalg.eig(m_cov)
-    eigendir = vr[:, np.argmax(w)]
+    coords = (affine.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
 
-    # orient them from posterior to anterior
-    if eigendir[1] < 0:
-        eigendir *= -1
+    if method == 'pca':
+        center = np.mean(coords, axis=0)
+        xcoords, direc = project_on_principal_axis(coords - center)
+    elif method == 'isomap':
+        isomap = Isomap(n_components=1, n_neighbors=20)
+        xcoords = isomap.fit_transform(coords)[:, 0]
 
-    proj = np.dot(points, eigendir)
-    proj -= proj.min()
-    proj /= proj.max()
+        isomap_ori = 1
+        if np.mean(coords[:, 1][xcoords < np.median(xcoords)]) > np.mean(coords[:, 1][xcoords > np.median(xcoords)]):
+            isomap_ori = -1
+        xcoords *= isomap_ori
+    else:
+        raise ValueError("Unknown method %s." % method)
 
-    return proj
+    r0 = lut.name2ind[region]
 
+    # For each pair of to-regions
+    limits = [-np.inf]
+    for reg1, reg2 in zip(regions_to[:-1], regions_to[1:]):
+        r1 = lut.name2ind[reg1]
+        r2 = lut.name2ind[reg2]
+
+        # Find voxels on the interface
+        inds = find_interface_voxels(parc, (r0, r1, r2))
+        if len(inds) > 0:
+            posvox = np.mean(inds, axis=0)
+            posras = affine.dot(np.append(posvox, 1.0))[:3]
+
+            if method == 'pca':
+                limits.append(np.dot(posras - center, direc))
+            elif method == 'isomap':
+                limits.append(isomap_ori * isomap.transform(posras.reshape(1, -1))[0, 0])
+
+        else:
+            warnings.warn("No interface found between %s,%s,%s." % (region, reg1, reg2))
+            limits.append(limits[-1])
+    limits.append(np.inf)
+
+    for reg, x_fr, x_to in zip(regions_to, limits[:-1], limits[1:]):
+        imask = (xcoords >= x_fr) * (xcoords < x_to)
+        mask = [idxs[imask] for idxs in indsl]
+        parc[mask] = lut.name2ind[reg]
 
 
 def convert_to_vep_parc(destrieux_file, lut_file, rules_file, vep_file):
@@ -200,15 +263,18 @@ def convert_to_vep_parc(destrieux_file, lut_file, rules_file, vep_file):
             parc_rename(labelvol, colorlut, rule[1], rule[2])
         elif rule[0] == "split":
             factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
-            parc_split(labelvol, affine, colorlut, rule[1], rule[2].split(","), factors=factors)
+            parc_split(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='pca', factors=factors)
         elif rule[0] == "splitnl":
             factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
-            parc_splitnl(labelvol, affine, colorlut, rule[1], rule[2].split(","), factors=factors)
+            parc_split(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='isomap', factors=factors)
+        elif rule[0] == "splitbetween":
+            parc_splitbetween(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='pca')
+        elif rule[0] == "splitbetweennl":
+            parc_splitbetween(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='isomap')
         else:
             raise ValueError("Unknown rule %s" % rule[0])
 
     assert np.sum(labelvol < 0) == 0
-
 
     mgz_vep = nib.freesurfer.mghformat.MGHImage(labelvol, affine, mgz_destrieux.header)
     nib.save(mgz_vep, vep_file)
