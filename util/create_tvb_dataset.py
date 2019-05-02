@@ -611,9 +611,9 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
 
     if out_surfaces_dir:
         surf_subcort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_subcort.%s.txt" % parcellation))
-        surf_subcort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_subcort.zip"))
+        surf_subcort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_subcort.%s.zip" % parcellation))
         surf_cort.save_region_mapping_txt(os.path.join(out_surfaces_dir, "region_mapping_cort.%s.txt" % parcellation))
-        surf_cort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_cort.zip"))
+        surf_cort.save_surf_zip(os.path.join(out_surfaces_dir, "surface_cort.%s.zip" % parcellation))
 
     log.info('complete in %0.2fs', time.time() - tic)
 

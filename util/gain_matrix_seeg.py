@@ -88,11 +88,10 @@ def compute_vertex_areas(vertices, triangles):
 
 
 def read_surf(directory: os.PathLike, parcellation: str, use_subcort):
-    parc_str = "." + parcellation if parcellation is not None else ""
-    reg_map_cort = np.genfromtxt((os.path.join(directory, "region_mapping_cort%s.txt" % parc_str)), dtype=int)
-    reg_map_subc = np.genfromtxt((os.path.join(directory, "region_mapping_subcort%s.txt" % parc_str)), dtype=int)
+    reg_map_cort = np.genfromtxt((os.path.join(directory, "region_mapping_cort.%s.txt" % parcellation)), dtype=int)
+    reg_map_subc = np.genfromtxt((os.path.join(directory, "region_mapping_subcort.%s.txt" % parcellation)), dtype=int)
 
-    with zipfile.ZipFile(os.path.join(directory, "surface_cort.zip")) as zip:
+    with zipfile.ZipFile(os.path.join(directory, "surface_cort.%s.zip" % parcellation)) as zip:
         with zip.open('vertices.txt') as fhandle:
             verts_cort = np.genfromtxt(fhandle)
         with zip.open('normals.txt') as fhandle:
@@ -100,7 +99,7 @@ def read_surf(directory: os.PathLike, parcellation: str, use_subcort):
         with zip.open('triangles.txt') as fhandle:
             triangles_cort = np.genfromtxt(fhandle, dtype=int)
 
-    with zipfile.ZipFile(os.path.join(directory, "surface_subcort.zip")) as zip:
+    with zipfile.ZipFile(os.path.join(directory, "surface_subcort.%s.zip" % parcellation)) as zip:
         with zip.open('vertices.txt') as fhandle:
             verts_subc = np.genfromtxt(fhandle)
         with zip.open('normals.txt') as fhandle:
