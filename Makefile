@@ -58,9 +58,12 @@ conn: $(sd)/dwi/counts.dk.txt        $(sd)/dwi/lengths.dk.txt        \
 conn_label: $(sd)/dwi/label_in_T1.dk.nii.gz $(sd)/dwi/label_in_T1.destrieux.nii.gz $(sd)/dwi/label_in_T1.vep.nii.gz
 labeled_elec: $(sd)/elec/labeled_elec-$(elec_mode).nii.gz
 elec: $(sd)/elec/seeg.xyz $(sd)/elec/img \
-      $(sd)/elec/elec.dk.png        $(sd)/elec/gain_dipole_no-subcort.dk.txt        $(sd)/elec/gain_inv-square.dk.txt        \
-      $(sd)/elec/elec.destrieux.png $(sd)/elec/gain_dipole_no-subcort.destrieux.txt $(sd)/elec/gain_inv-square.destrieux.txt \
-      $(sd)/elec/elec.vep.png       $(sd)/elec/gain_dipole_no-subcort.vep.txt       $(sd)/elec/gain_inv-square.vep.txt
+      $(sd)/elec/elec.dk.png                   $(sd)/elec/gain_dipole_no-subcort.dk.txt  		\
+	  $(sd)/elec/elec.destrieux.png			   $(sd)/elec/gain_dipole_no-subcort.destrieux.txt	\
+	  $(sd)/elec/elec.vep.png				   $(sd)/elec/gain_dipole_no-subcort.vep.txt		\
+	  $(sd)/elec/gain_inv-square.dk.txt		   $(sd)/elec/gain_volume.dk.txt					\
+	  $(sd)/elec/gain_inv-square.destrieux.txt $(sd)/elec/gain_volume.destrieux.txt				\
+	  $(sd)/elec/gain_inv-square.vep.txt	   $(sd)/elec/gain_volume.vep.txt
 tvb: $(sd)/tvb/connectivity.dk.zip         $(sd)/tvb/img/connectivity.dk.png          \
      $(sd)/tvb/connectivity.destrieux.zip  $(sd)/tvb/img/connectivity.destrieux.png   \
      $(sd)/tvb/connectivity.vep.zip        $(sd)/tvb/img/connectivity.vep.png

@@ -70,6 +70,15 @@ $(sd)/elec/gain_inv-square.%.txt: $(sd)/tvb/connectivity.%.zip $(sd)/elec/seeg.x
 	  --parcellation $* \
 	  $^ $@
 
+$(sd)/elec/gain_volume.%.txt: $(sd)/dwi/label_in_T1.%.nii.gz $(sd)/tvb/connectivity.%.zip $(sd)/elec/seeg.xyz
+	python -m util.gain_matrix_seeg             \
+	  --mode volume                             \
+	  --formula inv_square                      \
+	  --use_subcort                             \
+	  --label $(sd)/dwi/label_in_T1.$*.nii.gz   \
+	  $(sd)/tvb/connectivity.$*.zip             \
+      $(sd)/elec/seeg.xyz $@
+
 $(sd)/elec/img: $(sd)/elec/seeg.xyz $(sd)/mri/T1.RAS.RO.nii.gz $(sd)/elec/elec-$(elec_mode)_in_T1.nii.gz
 	mkdir -p $@
 	python -m util.plot plot_t1_plus_elecs $(sd)/mri/T1.RAS.RO.nii.gz $(sd)/elec/elec-$(elec_mode)_in_T1.nii.gz \

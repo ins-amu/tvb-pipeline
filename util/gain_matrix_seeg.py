@@ -7,7 +7,7 @@ import sys
 import zipfile
 
 import numpy as np
-
+import nibabel as nib
 
 SIGMA = 1.0
 
@@ -66,6 +66,28 @@ def gain_matrix_inv_square(vertices: np.ndarray, areas: np.ndarray, region_mappi
     return gain_mtx_vert @ reg_map_mtx
 
 
+def gain_matrix_inv_square_vol(labelvol, sensors, tvb_zipfile, use_subcort):
+    EPS = 2.0 # mm
+
+    names, centres, areas, normals, cortical = read_tvb_zipfile(tvb_zipfile)
+
+    nsens = sensors.shape[0]
+    nreg = len(names)
+    label = labelvol.get_data()
+
+    gain_mtx = np.zeros((nsens, nreg))
+    for reg, iscort in enumerate(cortical):
+        if (not use_subcort) and (not iscort):
+            continue
+
+        inds = np.argwhere(label == reg+1)
+        pos = (labelvol.affine.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
+        for sens_ind in range(nsens):
+            d = np.sqrt(np.sum((sensors[sens_ind, :] - pos)**2, axis=1))
+            gain_mtx[sens_ind, reg] = np.sum(1 /(d + EPS)**2)
+
+    return gain_mtx
+
 
 def compute_triangle_areas(vertices, triangles):
     """Calculates the area of triangles making up a surface."""
@@ -120,23 +142,31 @@ def read_surf(directory: os.PathLike, parcellation: str, use_subcort):
 
         return (verts, normals, areas, regmap)
 
-
-def read_regions(zip_name: os.PathLike, use_subcort):
+def read_tvb_zipfile(zip_name):
     with zipfile.ZipFile(zip_name) as zip:
         with zip.open('centres.txt') as fhandle:
-            verts = np.genfromtxt(fhandle, usecols=[1, 2, 3])
+            names = list(np.genfromtxt(fhandle, usecols=(0,), dtype=str))
+        with zip.open('centres.txt') as fhandle:
+            centres = np.genfromtxt(fhandle, usecols=[1, 2, 3])
         with zip.open('areas.txt') as fhandle:
             areas = np.genfromtxt(fhandle)
         with zip.open('average_orientations.txt') as fhandle:
             normals = np.genfromtxt(fhandle)
         with zip.open('cortical.txt') as fhandle:
             cortical = np.genfromtxt(fhandle, dtype=int).astype(bool)
-    regmap = np.arange(0, verts.shape[0])
+
+    return names, centres, areas, normals, cortical
+
+
+def read_regions(zip_name: os.PathLike, use_subcort):
+    names, centres, areas, normals, cortical = read_tvb_zipfile(zip_name)
+    regmap = np.arange(0, centres.shape[0])
 
     if not use_subcort:
-        return (verts[cortical], normals[cortical], areas[cortical], regmap[cortical])
+        return (centres[cortical], normals[cortical], areas[cortical], regmap[cortical])
     else:
-        return (verts, normals, areas, regmap)
+        return (centres, normals, areas, regmap)
+
 
 def get_nregions(zip_name):
     with zipfile.ZipFile(zip_name) as zip:
@@ -149,10 +179,11 @@ def main():
     parser = argparse.ArgumentParser(description="Generate SEEG gain matrix.")
 
     # Defaults are not given on purpose to force the user to think about what is needed.
-    parser.add_argument('--mode', type=str, choices=['surface', 'region'], required=True)
+    parser.add_argument('--mode', type=str, choices=['surface', 'region', 'volume'], required=True)
     parser.add_argument('--formula', type=str, choices=['dipole', 'inv_square'], required=True)
     parser.add_argument('--surf_dir', help="Directory with surfaces and region mapping. Required if mode is 'surface'.")
     parser.add_argument('--parcellation', help="Parcellation name. Required if mode is 'surface'.")
+    parser.add_argument('--label', help="3D label volume file. Required if mode is 'volume'.")
 
     use_subcort_parser = parser.add_mutually_exclusive_group(required=True)
     use_subcort_parser.add_argument('--use_subcort', dest='use_subcort', action='store_true')
@@ -165,20 +196,29 @@ def main():
     args = parser.parse_args()
     if args.mode == 'surface' and args.surf_dir is None:
         parser.error("--surf_dir is required if mode is 'surface'")
+    if args.mode == 'volume' and args.label is None:
+        parser.error("--label is required if mode is 'volume'")
 
     nregions = get_nregions(args.tvb_zipfile)
+    sensors_pos = np.genfromtxt(args.sensors_file, usecols=[1, 2, 3])
 
     if args.mode == 'surface':
         verts, normals, areas, regmap = read_surf(args.surf_dir, args.parcellation, args.use_subcort)
     elif args.mode == 'region':
         verts, normals, areas, regmap = read_regions(args.tvb_zipfile, args.use_subcort)
 
-    sensors_pos = np.genfromtxt(args.sensors_file, usecols=[1, 2, 3])
 
-    if args.formula == 'dipole':
-        gain_mtx = gain_matrix_dipole(verts, normals, areas, regmap, nregions, sensors_pos)
-    elif args.formula == 'inv_square':
-        gain_mtx = gain_matrix_inv_square(verts, areas, regmap, nregions, sensors_pos)
+    # Generate the gain matrix
+
+    if args.mode == 'volume':
+        assert args.formula == 'inv_square'
+        labelvol = nib.load(args.label)
+        gain_mtx = gain_matrix_inv_square_vol(labelvol, sensors_pos, args.tvb_zipfile, args.use_subcort)
+    else:
+        if args.formula == 'dipole':
+            gain_mtx = gain_matrix_dipole(verts, normals, areas, regmap, nregions, sensors_pos)
+        elif args.formula == 'inv_square':
+            gain_mtx = gain_matrix_inv_square(verts, areas, regmap, nregions, sensors_pos)
 
     np.savetxt(args.gain_matrix, gain_mtx)
 
