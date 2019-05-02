@@ -33,10 +33,6 @@
 1   Lingual-gyrus
 1   Calcarine-sulcus
 1   Cuneus
-1   Cerebellar-cortex
-1   Thalamus
-1   Caudate-nucleus
-1   Nucleus-accumbens
 1   F2-rostral
 1   F2-caudal
 1   SFS-rostral

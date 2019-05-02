@@ -284,8 +284,8 @@ def aparcaseg_to_aparc(aparcaseg_file, parc_lut_file, region_file, aparc_file, a
     mgz_apas = nib.load(aparcaseg_file)
     lut_inds  = np.genfromtxt(parc_lut_file, usecols=(0,), dtype=int)
     lut_names = list(np.genfromtxt(parc_lut_file, usecols=(1,), dtype=str))
-    reg_names = np.genfromtxt(region_file, usecols=(0,), dtype=str)
-    reg_iscort = np.genfromtxt(region_file, usecols=(1,), dtype=int).astype(bool)
+    reg_names = np.genfromtxt(region_file, usecols=(1,), dtype=str)
+    reg_iscort = np.genfromtxt(region_file, usecols=(0,), dtype=int).astype(bool)
 
     labels_old = mgz_apas.get_data()
     labels_new = np.zeros_like(labels_old)
