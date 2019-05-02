@@ -15,6 +15,7 @@ from zipfile import ZipFile
 
 import numpy as np
 
+import nibabel as nib
 import nibabel.freesurfer.io
 
 
@@ -40,7 +41,8 @@ class StructuralDataset:
                  cortical: np.ndarray,
                  weights_ut: np.ndarray,
                  tract_lengths_ut: np.ndarray,
-                 names: List[str]):
+                 names: List[str],
+                 volumes: np.ndarray=None):
 
         nregions = len(names)
 
@@ -62,6 +64,7 @@ class StructuralDataset:
         self.centers = centers
         self.cortical = cortical
         self.names = names
+        self.volumes = volumes
 
     def save_to_txt_zip(self, filename: os.PathLike):
 
@@ -73,12 +76,15 @@ class StructuralDataset:
         file_cortical = os.path.join(tmpdir.name, 'cortical.txt')
         file_weights = os.path.join(tmpdir.name, 'weights.txt')
         file_tract_lengths = os.path.join(tmpdir.name, 'tract_lengths.txt')
+        file_volumes = os.path.join(tmpdir.name, 'volumes.txt')
 
         np.savetxt(file_areas, self.areas, fmt='%.2f')
         np.savetxt(file_orientations, self.orientations, fmt='%.2f %.2f %.2f')
         np.savetxt(file_cortical, self.cortical, fmt='%d')
         np.savetxt(file_weights, self.weights, fmt='%d')
         np.savetxt(file_tract_lengths, self.tract_lengths, fmt='%.3f')
+        if self.volumes is not None:
+            np.savetxt(file_volumes, self.volumes, fmt='%.2f')
 
         with open(file_centres, 'w') as f:
             for i, name in enumerate(self.names):
@@ -91,6 +97,8 @@ class StructuralDataset:
             zip_file.write(file_cortical, os.path.basename(file_cortical))
             zip_file.write(file_weights, os.path.basename(file_weights))
             zip_file.write(file_tract_lengths, os.path.basename(file_tract_lengths))
+            if self.volumes is not None:
+                zip_file.write(file_volumes, os.path.basename(file_volumes))
 
 
 class Hemisphere(enum.Enum):
@@ -337,6 +345,23 @@ def compute_region_params(surface: Surface, subcortical: bool=False)\
 
     return regions, areas, orientations, centers
 
+
+def get_region_volumes(labelvol_file):
+    labelvol = nib.load(labelvol_file)
+    labels = labelvol.get_data()
+    nreg = np.max(labels)
+
+    dx, dy, dz = labelvol.header.get_zooms()
+    voxel_vol = dx*dy*dz
+
+    volumes = np.zeros(nreg+1, dtype=float)
+    for i in range(0, nreg+1):
+        volumes[i] = voxel_vol * np.sum(labels == i)
+
+    return volumes
+
+
+
 def extract_vector(string: str, name: str) -> Optional[List[float]]:
     r"""
     Extract numerical vector from a block of text. The vector has to be on a single line with the format:
@@ -527,6 +552,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
                        parcellation: str,
                        weights_file: os.PathLike,
                        tract_lengths_file: os.PathLike,
+                       label_volume_file: os.PathLike,
                        struct_zip_file: os.PathLike,
                        out_surfaces_dir: os.PathLike=None,
                        include_unknown: bool=False):
@@ -547,6 +573,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
     parcellation: Parcellation type, currently either 'dk', 'destrieux', or 'vep'
     weights_file: text file with weights matrix (which should be upper triangular)
     tract_lengths_file: text file with tract length matrix (which should be upper triangular)
+    label_volume_file: 3D volume with region labels
     struct_zip_file: zip file containing TVB structural dataset to be created
     out_surfaces_dir: directory where to put the surfaces and region mappings in TVB format
     include_unknown: include also unknown regions in the connectome
@@ -569,6 +596,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
     areas = np.zeros(nregions)
     centers = np.zeros((nregions, 3))
     cortical = np.zeros(nregions, dtype=bool)
+    volumes = get_region_volumes(label_volume_file)
 
     for region_params, is_cortical in [(region_params_subcort, False), (region_params_cort, True)]:
         regions, reg_areas, reg_orientations, reg_centers = region_params
@@ -591,6 +619,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
         areas = areas[indices]
         centers = centers[indices]
         cortical = cortical[indices]
+        volumes = volumes[indices]
 
         remap_dict = {ind: ind if ind < region_index_mapping.unknown_ind else ind - 1 for ind in range(nregions)}
         remap_dict[region_index_mapping.unknown_ind] = -1
@@ -606,7 +635,7 @@ def create_tvb_dataset(cort_surf_direc: os.PathLike,
         np.insert(tract_lengths, region_index_mapping.unknown_ind, 0.0, axis=0)
         np.insert(tract_lengths, region_index_mapping.unknown_ind, 0.0, axis=1)
 
-    dataset = StructuralDataset(orientations, areas, centers, cortical, weights, tract_lengths, names)
+    dataset = StructuralDataset(orientations, areas, centers, cortical, weights, tract_lengths, names, volumes)
     dataset.save_to_txt_zip(struct_zip_file)
 
     if out_surfaces_dir:
@@ -632,6 +661,7 @@ def main():
         parcellation,
         weights_file,
         tract_lengths_file,
+        os.path.join(subject_dir, "dwi/label_in_T1.%s.nii.gz" % parcellation),
         out_file,
         out_surf
     )
