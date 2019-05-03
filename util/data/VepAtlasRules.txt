@@ -17,7 +17,7 @@
 # Merge operations
 
 merge   ctx_%h_G_and_S_frontomargin,ctx_%h_G_and_S_transv_frontopol                         %H-Frontal-pole
-merge   ctx_%h_G_orbital,ctx_%h_S_orbital_lateral,ctx_%h_S_orbital-H_Shaped                 %H-Orbito-frontal-Cortex
+merge   ctx_%h_G_orbital,ctx_%h_S_orbital_lateral,ctx_%h_S_orbital-H_Shaped                 %H-Orbito-frontal-cortex
 merge   ctx_%h_G_rectus,ctx_%h_S_suborbital,ctx_%h_S_orbital_med-olfact                     %H-Gyrus-rectus
 merge   ctx_%h_G_front_inf-Orbital,ctx_%h_Lat_Fis-ant-Horizont                              %H-F3-Pars-Orbitalis
 merge   ctx_%h_G_front_inf-Triangul,ctx_%h_Lat_Fis-ant-Vertical                             %H-F3-Pars-triangularis
@@ -33,7 +33,7 @@ merge   ctx_%h_Pole_occipital,ctx_%h_S_oc_middle_and_Lunatus                    
 rename  ctx_%h_G_front_inf-Opercular               %H-F3-pars-opercularis
 rename  ctx_%h_S_front_inf                         %H-Inferior-frontal-sulcus
 rename  ctx_%h_S_front_middle                      %H-Middle-frontal-sulcus
-rename  ctx_%h_G_subcallosal                       %H-Subcallosal-area-BA13
+rename  ctx_%h_G_subcallosal                       %H-Subcallosal-area
 rename  ctx_%h_S_precentral-inf-part               %H-Precentral-sulcus-inferior-part
 rename  ctx_%h_S_precentral-sup-part               %H-Precentral-sulcus-superior-part
 rename  ctx_%h_G_and_S_paracentral                 %H-Paracentral-lobule
@@ -71,7 +71,7 @@ split   ctx_%h_G_temporal_middle                   %H-T2-anterior,%H-T2-posterio
 split   ctx_%h_G_temporal_inf                      %H-T3-anterior,%H-T3-posterior
 split   %H-Hippocampus                             %H-Hippocampus-anterior,%H-Hippocampus-posterior
 
-split   ctx_%h_G_front_sup                         %H-F1-prefrontal,%H-preSMA,%H-SMA                              2,1,3
+split   ctx_%h_G_front_sup                         %H-F1-prefrontal,%H-PreSMA,%H-SMA                              2,1,3
 split   ctx_%h_G_precentral                        %H-Precentral-gyrus-head-face,%H-Precentral-gyrus-upper-limb   2,1
 split   ctx_%h_S_central                           %H-Central-sulcus-head-face,%H-Central-sulcus-upper-limb       2,1
 

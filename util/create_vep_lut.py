@@ -34,7 +34,8 @@ def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
 
     # Make sure that every cortical region is in rules
     for reg in vep_regs[vep_iscort]:
-        assert ("%%H-%s" % reg) in newregs
+        if ("%%H-%s" % reg) not in newregs:
+            raise Exception("Rule for region '%s' is missing" % reg)
 
     # Make sure that every subcortical region is either in rules or in Freesurfer table
     for reg in vep_regs[~vep_iscort]:
