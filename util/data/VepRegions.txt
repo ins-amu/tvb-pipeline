@@ -13,9 +13,11 @@
 1   Middle-frontal-sulcus
 1   SFS-rostral
 1   SFS-caudal
-1   F1-prefrontal
+1   F1-mesial-prefrontal
 1   PreSMA
 1   SMA
+1   F1-lateral-prefrontal
+1   F1-lateral-premotor
 1   Subcallosal-area
 1   Precentral-sulcus-inferior-part
 1   Precentral-sulcus-superior-part

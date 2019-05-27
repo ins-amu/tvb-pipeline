@@ -8,30 +8,43 @@ import numpy as np
 import nibabel as nib
 from sklearn.manifold import Isomap
 
-SHIFT_LH = 70000
-SHIFT_RH = 71000
 
 class ColorLut():
     """Color look-up table"""
     def __init__(self, filename):
         self.inds  = np.genfromtxt(filename, usecols=(0,), dtype=int)
         self.names = np.genfromtxt(filename, usecols=(1,), dtype=str)
-
-        # Temporary regions
-        self.inds = np.insert(self.inds, 0, [-10-i for i in range(10)])
-        self.names = np.insert(self.names, 0, ['__temporary_region_%d' % i for i in range(10)])
+        self.colors = np.genfromtxt(filename, usecols=(2,3,4,5), dtype=int)
 
         self.name2ind = {name: ind for name, ind in zip(self.names, self.inds)}
         self.ind2name = {ind: name for name, ind in zip(self.names, self.inds)}
 
 
-
-def load_rules(filename):
+def load_rules(filename, section=None):
     with open(filename, 'r') as fl:
         lines = [line.strip() for line in fl.readlines()]
 
+    # Remove comments
     rules = [line.split() for line in lines if len(line) > 0 and line[0] != "#"]
-    return rules
+
+    # Get section index
+    index = [('__begin__', 0)]
+    rules_ = []
+    for rule in rules:
+        if rule[0] == 'Section':
+            if len(rule) != 2:
+                raise ValueError(f"Unexpected Section: '{rule}'")
+            index.append((rule[1], len(rules_)))
+        else:
+            rules_.append(rule)
+    index.append(('__end__', len(rules_)))
+    rules = rules_
+
+    if section is None:
+        return rules
+    else:
+        ind = [a[0] for a in index].index(section)
+        return rules[index[ind][1]:index[ind+1][1]]
 
 
 def expand_wildcards_hemisphere(rules):
@@ -46,15 +59,6 @@ def expand_wildcards_hemisphere(rules):
         else:
             rules_n.append(rule)
     return rules_n + rules_l + rules_r
-
-
-def expand_wildcards_temp(rules):
-    new_rules = []
-    for rule in rules:
-        for i in range(10):
-            rule = [elem.replace("%%%d" % i, "__temporary_region_%d" % i) for elem in rule]
-        new_rules.append(rule)
-    return new_rules
 
 
 def project_on_principal_axis(points):
@@ -108,34 +112,32 @@ def find_interface_voxels(parc, regs):
     return np.array(interface)
 
 
-    # Orient them from posterior to anterior
-    if np.mean(coords[:, 1][xcoords < 0.1]) > np.mean(coords[:, 1][xcoords > 0.9]):
-        xcoords = 1 - xcoords
-
-
-def parc_merge(parc, lut, regions_in, region_out):
+def find_interface_verts(triangs, labels, reg1, reg2, reg3):
     """
-    In-place merging of several regions.
-
-    Formerly `update_parc_regroup`
+    Not the most efficient version, but it is enough.
     """
-    ind_out = lut.name2ind[region_out]
-    for reg in regions_in:
-        ind_in = lut.name2ind[reg]
-        mask = (parc == ind_in)
-        parc[mask] = ind_out
+
+    interface = []
+    for v1, v2, v3 in triangs:
+        neighs = set([labels[v1], labels[v2], labels[v3]])
+        if all([reg in neighs for reg in [reg1, reg2, reg3]]):
+            interface.extend([v1, v2, v3])
+
+    return np.array(interface)
 
 
-def parc_rename(parc, lut, region_in, region_out):
-    """
-    In-place rename of a single region.
-
-    Formerly `update_parc_rename`
-    """
-    parc_merge(parc, lut, [region_in], region_out)
+def op_merge(labels, labels_in, label_out):
+    """In-place region merge"""
+    for lab in labels_in:
+        labels[labels == lab] = label_out
 
 
-def parc_split(parc, affine, lut, region_in, regions_out, method, factors=None):
+def op_rename(labels, label_in, label_out):
+    """In-place region rename"""
+    op_merge(labels, [label_in], label_out)
+
+
+def op_split(labels, mode, geom, label_in, labels_out, method, factors=None):
     """
     In-place split of a single region along a anterior-posterior axis.
 
@@ -143,19 +145,24 @@ def parc_split(parc, affine, lut, region_in, regions_out, method, factors=None):
       'pca'     for split after a linear projection
       'isomap'  for split after a nonlinear projection
 
-    Regions in `regions_out` should be ordered in the anterior-posterior direction.
+    Regions in `labels_out` should be ordered in the anterior-posterior direction.
     If `factors` are missing, equal length split is performed.
     """
 
     if factors is None:
-        factors = np.ones(len(regions_out), dtype=int)
+        factors = np.ones(len(labels_out), dtype=int)
 
-    assert len(regions_out) == len(factors)
+    assert len(labels_out) == len(factors)
 
-    inds = np.argwhere(parc == lut.name2ind[region_in])
-    indsl = np.nonzero(parc == lut.name2ind[region_in])  # Just a different format
+    inds = np.argwhere(labels == label_in)
+    indsl = np.nonzero(labels == label_in)  # Just a different format
 
-    coords = (affine.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
+    if mode == 'voxel':
+        # Affine transformation
+        coords = (geom.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
+    elif mode == 'triang':
+        # Just coordinates
+        coords = geom[inds[:, 0]]
 
     if method == 'pca':
         center = np.mean(coords, axis=0)
@@ -179,28 +186,34 @@ def parc_split(parc, affine, lut, region_in, regions_out, method, factors=None):
     limits = limits/limits[-1]
     limits[-1] = np.inf
 
-    for region_out, xfr, xto in zip(reversed(regions_out), limits[:-1], limits[1:]):
+    for label_out, xfr, xto in zip(reversed(labels_out), limits[:-1], limits[1:]):
         imask = (xcoords >= xfr) * (xcoords < xto)
         mask = [idxs[imask] for idxs in indsl]
-        parc[mask] = lut.name2ind[region_out]
+        labels[mask] = label_out
 
 
-def parc_splitbetween(parc, affine, lut, region, regions_to, method):
+def op_splitto(labels, mode, geom, label_in, labels_out, method):
     """
     In-place split of a single region between multiple other regions.
     Method can be either:
       'pca'     for split after a linear projection
       'isomap'  for split after a nonlinear projection
 
-    `regions_to` should be ordered in the anterior-posterior direction.
+    `labels_out` should be ordered in the anterior-posterior direction.
     """
     # Reorder posterior-anterior
-    regions_to = list(reversed(regions_to))
+    labels_out = list(reversed(labels_out))
 
-    inds = np.argwhere(parc == lut.name2ind[region])
-    indsl = np.nonzero(parc == lut.name2ind[region])  # Just a different format
+    inds = np.argwhere(labels == label_in)
+    indsl = np.nonzero(labels == label_in)  # Just a different format
 
-    coords = (affine.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
+    if mode == 'voxel':
+        # Affine transformation
+        coords = (geom.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3]
+    elif mode == 'triang':
+        # Just coordinates
+        verts, triangs = geom
+        coords = verts[inds[:, 0]]
 
     if method == 'pca':
         center = np.mean(coords, axis=0)
@@ -216,19 +229,19 @@ def parc_splitbetween(parc, affine, lut, region, regions_to, method):
     else:
         raise ValueError("Unknown method %s." % method)
 
-    r0 = lut.name2ind[region]
-
     # For each pair of to-regions
     limits = [-np.inf]
-    for reg1, reg2 in zip(regions_to[:-1], regions_to[1:]):
-        r1 = lut.name2ind[reg1]
-        r2 = lut.name2ind[reg2]
+    for lab1, lab2 in zip(labels_out[:-1], labels_out[1:]):
+        if mode == 'voxel':
+            inds = find_interface_voxels(labels, (label_in, lab1, lab2))
+        elif mode == 'triang':
+            inds = find_interface_verts(triangs, labels, label_in, lab1, lab2)
 
-        # Find voxels on the interface
-        inds = find_interface_voxels(parc, (r0, r1, r2))
         if len(inds) > 0:
-            posvox = np.mean(inds, axis=0)
-            posras = affine.dot(np.append(posvox, 1.0))[:3]
+            if mode == 'voxel':
+                posras = np.mean((geom.dot(np.c_[inds, np.ones(inds.shape[0])].T).T)[:, :3], axis=0)
+            elif mode == 'triang':
+                posras = np.mean(verts[inds], axis=0)
 
             if method == 'pca':
                 limits.append(np.dot(posras - center, direc))
@@ -236,68 +249,138 @@ def parc_splitbetween(parc, affine, lut, region, regions_to, method):
                 limits.append(isomap_ori * isomap.transform(posras.reshape(1, -1))[0, 0])
 
         else:
-            warnings.warn("No interface found between %s,%s,%s." % (region, reg1, reg2))
+            warnings.warn("No interface found between %s,%s,%s." % (label_in, lab1, lab2))
             limits.append(limits[-1])
     limits.append(np.inf)
 
-    for reg, x_fr, x_to in zip(regions_to, limits[:-1], limits[1:]):
+    for lab, x_fr, x_to in zip(labels_out, limits[:-1], limits[1:]):
         imask = (xcoords >= x_fr) * (xcoords < x_to)
         mask = [idxs[imask] for idxs in indsl]
-        parc[mask] = lut.name2ind[reg]
+        labels[mask] = lab
 
 
-def convert_to_vep_parc(destrieux_file, lut_file, rules_file, vep_file):
-    mgz_destrieux = nib.load(destrieux_file)
-    labelvol = mgz_destrieux.get_data().copy()
-    affine = mgz_destrieux.affine
+def op_splitmes(labels, hemi, verts, triangs, label_in, labels_out):
+    """
+    In-place split of a regions to mesial and 'lateral' parts.
+
+    Criterion for this split is a orientation of a normal on an inflated surface.
+    The operation is available only for triangulated surface.
+    """
+    NORMAL_THRESHOLD = -0.5
+
+    inds = np.where(labels == label_in)
+    triang_coords = verts[triangs]
+
+    triang_normals = np.cross(triang_coords[:, 1] - triang_coords[:, 0],
+                              triang_coords[:, 2] - triang_coords[:, 0])
+    vert_normals = np.zeros_like(verts)
+    vert_normals[triangs[:, 0]] += triang_normals
+    vert_normals[triangs[:, 1]] += triang_normals
+    vert_normals[triangs[:, 2]] += triang_normals
+    vert_normals /= np.linalg.norm(vert_normals, axis=1)[:, None]
+
+    mask = (labels == label_in)
+    direc = 1 if hemi in ['rh', 'Right'] else -1
+    labels[mask] = labels_out[0]
+    labels[mask * (direc * vert_normals[:, 0] > NORMAL_THRESHOLD)] = labels_out[1]
+
+
+def dehemize_name(name):
+    if name[:7] == "ctx_%h_":
+        return name[7:]
+    elif name[:3] == "%H-":
+        return name[3:]
+    else:
+        return name
+
+
+def convert_parc(destrieux_annot_file, pial_file, inflated_file, hemisphere, parc_lut_file, rules_file, vep_annot_file):
+    labels, _, names = nib.freesurfer.io.read_annot(destrieux_annot_file)
+    names = [n.decode('ascii').replace("&", "_and_") for n in names]
+    verts_pial, triangs_pial = nib.freesurfer.io.read_geometry(pial_file)
+    verts_infl, triangs_infl = nib.freesurfer.io.read_geometry(inflated_file)
+
+    rules = load_rules(rules_file, section='Cortex')
+    colorlut = ColorLut(parc_lut_file)
+
+    # Create master region list with old regions, new regions, and temporary regions
+    names.extend(colorlut.names)                       # Names from VEP parcellation
+    names.extend(["%%%d" % i for i in range(10)])      # Temporary regions
+
+    # Shorthands
+    def n2i(n):    return names.index(dehemize_name(n))
+    def ns2i(ns):  return [names.index(dehemize_name(n)) for n in ns.split(",")]
+
+    # Perform the in-place operations
+    for rule in rules:
+        if rule[0] == "merge":
+            op_merge(labels, ns2i(rule[1]), n2i(rule[2]))
+        elif rule[0] == "rename":
+            op_rename(labels, n2i(rule[1]), n2i(rule[2]))
+        elif rule[0] == "split":
+            factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
+            op_split(labels, 'triang', verts_pial, n2i(rule[1]), ns2i(rule[2]), method='pca', factors=factors)
+        elif rule[0] == "splitnl":
+            factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
+            op_split(labels, 'triang', verts_pial, n2i(rule[1]), ns2i(rule[2]), method='isomap', factors=factors)
+        elif rule[0] == "splitto":
+            op_splitto(labels, 'triang', (verts_pial, triangs_pial), n2i(rule[1]), ns2i(rule[2]), method='pca')
+        elif rule[0] == "splittonl":
+            op_splitto(labels, 'triang', (verts_pial, triangs_pial), n2i(rule[1]), ns2i(rule[2]), method='isomap')
+        elif rule[0] == "splitmes":
+            op_splitmes(labels, hemisphere, verts_infl, triangs_infl, n2i(rule[1]), ns2i(rule[2]))
+        else:
+            raise ValueError("Unknown rule %s" % rule[0])
+
+    # Keep only those in VEP parcellation color table
+    newlabels = -1 * np.ones_like(labels)
+    for i, name in zip(colorlut.inds, colorlut.names):
+        newlabels[labels == names.index(name)] = i
+
+    # Save
+    nib.freesurfer.io.write_annot(vep_annot_file, newlabels, colorlut.colors, colorlut.names, fill_ctab=True)
+
+
+def convert_seg(orig_label_file, lut_file, rules_file, vep_label_file):
+    mgz_orig = nib.load(orig_label_file)
+    labelvol = mgz_orig.get_data().copy()
+    affine = mgz_orig.affine
     colorlut = ColorLut(lut_file)
 
-    rules = load_rules(rules_file)
+    rules = load_rules(rules_file, section='Subcortical')
     rules = expand_wildcards_hemisphere(rules)
-    rules = expand_wildcards_temp(rules)
+
+    n2i_ = {name: ind for name, ind in zip(colorlut.names, colorlut.inds)}
+    n2i_.update({("%%%d" % i): -10-i for i in range(10)})  # Temporary regions
+
+    # Shorthands
+    def n2i(n):   return n2i_[n]
+    def ns2i(ns): return [n2i_[n] for n in ns.split(",")]
 
     for rule in rules:
         if rule[0] == "merge":
-            parc_merge(labelvol, colorlut, rule[1].split(","), rule[2])
+            op_merge(labelvol, ns2i(rule[1]), n2i(rule[2]))
         elif rule[0] == "rename":
-            parc_rename(labelvol, colorlut, rule[1], rule[2])
+            op_rename(labelvol, n2i(rule[1]), n2i(rule[2]))
         elif rule[0] == "split":
             factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
-            parc_split(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='pca', factors=factors)
+            op_split(labelvol, 'voxel', affine, n2i(rule[1]), ns2i(rule[2]), method='pca', factors=factors)
         elif rule[0] == "splitnl":
             factors = [int(a) for a in rule[3].split(",")] if (len(rule) == 4) else None
-            parc_split(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='isomap', factors=factors)
+            op_split(labelvol, 'voxel', affine, n2i(rule[1]), ns2i(rule[2]), method='isomap', factors=factors)
         elif rule[0] == "splitto":
-            parc_splitbetween(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='pca')
+            op_splitto(labelvol, 'voxel', affine, n2i(rule[1]), ns2i(rule[2]), method='pca')
         elif rule[0] == "splittonl":
-            parc_splitbetween(labelvol, affine, colorlut, rule[1], rule[2].split(","), method='isomap')
+            op_splitto(labelvol, 'voxel', affine, n2i(rule[1]), ns2i(rule[2]), method='isomap')
+        elif rule[0] == "splitmes":
+            raise ValueError("Rule 'splitmes' is available only in surface mode.")
         else:
             raise ValueError("Unknown rule %s" % rule[0])
 
     assert np.sum(labelvol < 0) == 0
 
-    mgz_vep = nib.freesurfer.mghformat.MGHImage(labelvol, affine, mgz_destrieux.header)
-    nib.save(mgz_vep, vep_file)
-
-
-def aparcaseg_to_aparc(aparcaseg_file, parc_lut_file, region_file, aparc_file, aparc_lut):
-    mgz_apas = nib.load(aparcaseg_file)
-    lut_inds  = np.genfromtxt(parc_lut_file, usecols=(0,), dtype=int)
-    lut_names = list(np.genfromtxt(parc_lut_file, usecols=(1,), dtype=str))
-    reg_names = np.genfromtxt(region_file, usecols=(1,), dtype=str)
-    reg_iscort = np.genfromtxt(region_file, usecols=(0,), dtype=int).astype(bool)
-
-    labels_old = mgz_apas.get_data()
-    labels_new = np.zeros_like(labels_old)
-
-    for i, name in enumerate(reg_names[reg_iscort]):
-        ind = lut_inds[lut_names.index(name)]
-        labels_new[labels_old == ind + SHIFT_LH] = ind
-        labels_new[labels_old == ind + SHIFT_RH] = ind
-
-    mgz_ap = nib.freesurfer.mghformat.MGHImage(labels_new, mgz_apas.affine, mgz_apas.header)
-    nib.save(mgz_ap, aparc_file)
-
+    mgz_vep = nib.freesurfer.mghformat.MGHImage(labelvol, affine, mgz_orig.header)
+    nib.save(mgz_vep, vep_label_file)
 
 
 if __name__ == '__main__':

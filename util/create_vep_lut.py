@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 
 from convert_to_vep_parc import load_rules, expand_wildcards_hemisphere
-from convert_to_vep_parc import SHIFT_LH, SHIFT_RH
+SHIFT_LH = 71000
+SHIFT_RH = 72000
 
 
 def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,

@@ -6,6 +6,7 @@
 #   splitnl         reg  newreg1,newreg2,...,newregN  [factor1,factor2,...factorN]
 #   splitto         reg  oldreg1,oldreg2,...,oldregN
 #   splittonl       reg  oldreg1,oldreg2,...,oldregN
+#   splitmes        reg  newreg1,newreg2
 #
 # Wildcards:
 #    %h             Hemisphere ("lh" and "rh")
@@ -13,6 +14,8 @@
 #    %0,%1,...,%9   Temporary regions, to be used and removed in subsequent operations.
 #                   It is the users responsibility to remove all of them (typically by merge operation)
 # --------------------------------------------------------------------------------------------------------- #
+
+Section Cortex
 
 # Merge operations
 
@@ -26,7 +29,6 @@ merge   ctx_%h_Lat_Fis-post,ctx_%h_G_temp_sup-Plan_tempo                        
 merge   ctx_%h_G_occipital_sup,ctx_%h_S_oc_sup_and_transversal                              %H-O1
 merge   ctx_%h_G_precuneus,ctx_%h_S_subparietal                                             %H-Precuneus
 merge   ctx_%h_Pole_occipital,ctx_%h_S_oc_middle_and_Lunatus                                %H-Occipital-pole
-
 
 # Rename operations
 
@@ -53,13 +55,6 @@ rename  ctx_%h_G_occipital_middle                  %H-O2
 rename  ctx_%h_G_oc-temp_med-Lingual               %H-Lingual-gyrus
 rename  ctx_%h_S_calcarine                         %H-Calcarine-sulcus
 rename  ctx_%h_G_cuneus                            %H-Cuneus
-rename  %H-Cerebellum-Cortex                       %H-Cerebellar-cortex
-rename  %H-Thalamus-Proper                         %H-Thalamus
-rename  %H-Caudate                                 %H-Caudate-nucleus
-rename  %H-Accumbens-area                          %H-Nucleus-accumbens
-
-
-# Split operations
 
 split   ctx_%h_G_front_middle                      %H-F2-rostral,%H-F2-caudal
 split   ctx_%h_S_front_sup                         %H-SFS-rostral,%H-SFS-caudal
@@ -69,9 +64,11 @@ split   ctx_%h_S_temporal_sup                      %H-STS-anterior,%H-STS-poster
 split   ctx_%h_S_temporal_inf                      %H-ITS-anterior,%H-ITS-posterior
 split   ctx_%h_G_temporal_middle                   %H-T2-anterior,%H-T2-posterior
 split   ctx_%h_G_temporal_inf                      %H-T3-anterior,%H-T3-posterior
-split   %H-Hippocampus                             %H-Hippocampus-anterior,%H-Hippocampus-posterior
 
-split   ctx_%h_G_front_sup                         %H-F1-prefrontal,%H-PreSMA,%H-SMA                              2,1,3
+splitmes     ctx_%h_G_front_sup                    %1,%2
+split        %1                                    %H-F1-mesial-prefrontal,%H-PreSMA,%H-SMA                       2,1,3
+split        %2                                    %H-F1-lateral-prefrontal,%H-F1-lateral-premotor
+
 split   ctx_%h_G_precentral                        %H-Precentral-gyrus-head-face,%H-Precentral-gyrus-upper-limb   2,1
 split   ctx_%h_S_central                           %H-Central-sulcus-head-face,%H-Central-sulcus-upper-limb       2,1
 
@@ -89,7 +86,6 @@ merge     %3,ctx_%h_S_oc-temp_lat                  %H-Occipito-temporal-sulcus
 split     ctx_%h_G_pariet_inf-Supramar             %H-Supramarginal-anterior,%1
 merge     %1,ctx_%h_S_interm_prim-Jensen           %H-Supramarginal-posterior
 
-
 # Split-to operations
 
 splittonl  ctx_%h_S_pericallosal  ctx_%h_G_and_S_cingul-Ant,ctx_%h_G_and_S_cingul-Mid-Ant,ctx_%h_G_and_S_cingul-Mid-Post,ctx_%h_G_cingul-Post-dorsal,ctx_%h_G_cingul-Post-ventral
@@ -102,3 +98,13 @@ rename     ctx_%h_G_cingul-Post-ventral                                    %H-Po
 splitto    ctx_%h_S_circular_insula_sup                                    ctx_%h_G_insular_short,ctx_%h_G_Ins_lg_and_S_cent_ins
 merge      ctx_%h_S_circular_insula_ant,ctx_%h_G_insular_short             %H-Insula-gyri-brevi
 merge      ctx_%h_G_Ins_lg_and_S_cent_ins,ctx_%h_S_circular_insula_inf     %H-Insula-gyri-longi
+
+
+
+Section Subcortical
+
+split   %H-Hippocampus                             %H-Hippocampus-anterior,%H-Hippocampus-posterior
+rename  %H-Cerebellum-Cortex                       %H-Cerebellar-cortex
+rename  %H-Thalamus-Proper                         %H-Thalamus
+rename  %H-Caudate                                 %H-Caudate-nucleus
+rename  %H-Accumbens-area                          %H-Nucleus-accumbens
