@@ -28,7 +28,7 @@ import nibabel.freesurfer.io
 PARC_SHIFTS = {
     'dk':        ( 1000,  2000),
     'destrieux': (11100, 12100),
-    'vep':       (70000, 71000)
+    'vep':       (71000, 72000)
 }
 
 
