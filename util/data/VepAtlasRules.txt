@@ -28,7 +28,10 @@ merge   ctx_%h_G_temp_sup-G_T_transv,ctx_%h_S_temporal_transverse               
 merge   ctx_%h_Lat_Fis-post,ctx_%h_G_temp_sup-Plan_tempo                                    %H-T1-planum-temporale
 merge   ctx_%h_G_occipital_sup,ctx_%h_S_oc_sup_and_transversal                              %H-O1
 merge   ctx_%h_G_precuneus,ctx_%h_S_subparietal                                             %H-Precuneus
-merge   ctx_%h_Pole_occipital,ctx_%h_S_oc_middle_and_Lunatus                                %H-Occipital-pole
+merge   ctx_%h_G_occipital_middle,ctx_%h_S_oc_middle_and_Lunatus                            %H-O2
+
+
+
 
 # Rename operations
 
@@ -51,7 +54,8 @@ rename  ctx_%h_S_cingul-Marginalis                 %H-Marginal-branch-of-the-cin
 rename  ctx_%h_S_parieto_occipital                 %H-Parieto-occipital-sulcus
 rename  ctx_%h_S_occipital_ant                     %H-Anterior-occipital-sulcus-and-preoccipital-notch
 rename  ctx_%h_G_and_S_occipital_inf               %H-O3
-rename  ctx_%h_G_occipital_middle                  %H-O2
+rename  ctx_%h_Pole_occipital                      %H-Occipital-pole
+
 rename  ctx_%h_G_oc-temp_med-Lingual               %H-Lingual-gyrus
 rename  ctx_%h_S_calcarine                         %H-Calcarine-sulcus
 rename  ctx_%h_G_cuneus                            %H-Cuneus
