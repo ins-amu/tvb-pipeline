@@ -78,7 +78,7 @@ def create_vep_fs_lut(vep_regs, vep_colors, fs_regs, fs_lut_file, vep_fs_lut_fil
                 if full_reg_name in fs_regs:
                     continue
 
-                fl.write("%5d  %-60s %3d %3d %3d %2ds\n" % (hnum + i, full_reg_name, *color))
+                fl.write("%5d  %-60s %3d %3d %3d %2d\n" % (hnum + i, full_reg_name, *color))
                 i += 1
 
 
