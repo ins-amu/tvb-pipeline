@@ -32,6 +32,7 @@ def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
 
     vep_regs = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=str)
     vep_iscort = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=int).astype(bool)
+    vep_colors = np.genfromtxt(vep_regions_file, usecols=(2,3,4,5), dtype=int)
 
     # Make sure that every cortical region is in rules
     for reg in vep_regs[vep_iscort]:
@@ -46,7 +47,7 @@ def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
     # Make sure all subcortical regions are at the end
     assert np.all(vep_iscort[:-1] >= vep_iscort[1:])
 
-    create_vep_fs_lut(vep_regs, fs_regs, fs_lut_file, vep_fs_lut_file)
+    create_vep_fs_lut(vep_regs, vep_colors, fs_regs, fs_lut_file, vep_fs_lut_file)
     create_vep_mrtrix_lut(vep_regs, vep_fs_lut_file, vep_mrtrix_lut_file)
     create_subcort_list(vep_regs[~vep_iscort], vep_fs_lut_file, vep_subcort_file)
     create_parc_lut(vep_regs[vep_iscort], vep_fs_lut_file, vep_aparc_lut_file)
@@ -63,29 +64,22 @@ def create_parc_lut(vep_regs, vep_fs_lut_file, vep_aparc_lut_file):
             fl.write("%3d %-60s %3d %3d %3d %3d\n" % (i+1, reg, *colors[ind]))
 
 
-def create_vep_fs_lut(vep_regs, fs_regs, fs_lut_file, vep_fs_lut_file):
-    regsl = ["Left-"+reg  for reg in vep_regs]
-    regsr = ["Right-"+reg for reg in vep_regs]
-
-    # Filter existing regions
-    regsl = [reg for reg in regsl if reg not in fs_regs]
-    regsr = [reg for reg in regsr if reg not in fs_regs]
-
-    # Get random, distinct colors
-    np.random.seed(42)
-    colors = [(a % 2**8, (a % 2**16) // 2**8, (a % 2**24) // 2**16)
-              for a in np.random.choice(2**24, len(vep_regs), replace=False)]
-
-
+def create_vep_fs_lut(vep_regs, vep_colors, fs_regs, fs_lut_file, vep_fs_lut_file):
     with open(fs_lut_file) as fl:
         lines = fl.readlines()
     with open(vep_fs_lut_file, "w") as fl:
         fl.writelines(lines)
         fl.write("\n\n#\n# Labels for the VEP parcellation\n#\n\n")
 
-        for regs, hnum in [(regsl, SHIFT_LH), (regsr, SHIFT_RH)]:
-            for i, reg in enumerate(regs):
-                fl.write("%5d  %-60s %3d %3d %3d  0\n" % (hnum + i + 1, reg, *colors[i]))
+        for hemi, hnum in [('Left', SHIFT_LH), ('Right', SHIFT_RH)]:
+            i = 1
+            for reg, color in zip(vep_regs, vep_colors):
+                full_reg_name = hemi + "-" + reg
+                if full_reg_name in fs_regs:
+                    continue
+
+                fl.write("%5d  %-60s %3d %3d %3d %2ds\n" % (hnum + i, full_reg_name, *color))
+                i += 1
 
 
 def create_vep_mrtrix_lut(vep_regs, vep_fs_lut_file, vep_mrtrix_lut_file):
