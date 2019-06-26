@@ -11,6 +11,17 @@ SHIFT_LH = 71000
 SHIFT_RH = 72000
 
 
+def duplicates(keys, values):
+    dct = {}
+    duplicates = []
+    for k, v in zip(keys, values):
+        if k in dct:
+            duplicates.append((k, dct[k], v))
+        else:
+            dct[k] = v
+    return duplicates
+
+
 def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
                 vep_fs_lut_file, vep_mrtrix_lut_file, vep_subcort_file, vep_aparc_lut_file):
 
@@ -33,6 +44,11 @@ def create_luts(fs_lut_file, vep_rules_file, vep_regions_file,
     vep_regs = np.genfromtxt(vep_regions_file, usecols=(1,), dtype=str)
     vep_iscort = np.genfromtxt(vep_regions_file, usecols=(0,), dtype=int).astype(bool)
     vep_colors = np.genfromtxt(vep_regions_file, usecols=(2,3,4,5), dtype=int)
+
+    duplicate_colors = duplicates(map(tuple, vep_colors), vep_regs)
+    if len(duplicate_colors) > 0:
+        raise ValueError(f"Duplicates in the color table: {duplicate_colors}")
+
 
     # Make sure that every cortical region is in rules
     for reg in vep_regs[vep_iscort]:

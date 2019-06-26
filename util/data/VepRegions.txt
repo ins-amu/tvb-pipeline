@@ -44,7 +44,7 @@
 
 # Temporal lobe
 
-1   Temporal-pole                                           255 255  60  0
+1   Temporal-pole                                           240 255  60  0
 1   T1-planum-polare                                        179 187 156  0
 1   Gyrus-of-Heschl                                         181 107 162  0
 1   T1-planum-temporale                                      57 188 208  0
@@ -60,7 +60,7 @@
 1   T3-posterior                                             62 192 238  0
 1   Fusiform-gyrus                                          204  52 199  0
 1   Occipito-temporal-sulcus                                255 192  96  0
-1   Collateral-sulcus                                         0 128 255  0
+1   Collateral-sulcus                                        10 128 255  0
 1   Lingual-sulcus                                           28  53  81  0
 1   Parahippocampal-cortex                                  218 133  56  0
 1   Rhinal-cortex                                            76 253 119  0

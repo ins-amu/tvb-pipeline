@@ -33,7 +33,7 @@
   32   Left-Posterior-cingulate-cortex-retrosplenial-gyrus            255   64  192    0
   33   Left-Insula-gyri-brevi                                         133  102  118    0
   34   Left-Insula-gyri-longi                                         241   31  145    0
-  35   Left-Temporal-pole                                             255  255   60    0
+  35   Left-Temporal-pole                                             240  255   60    0
   36   Left-T1-planum-polare                                          179  187  156    0
   37   Left-Gyrus-of-Heschl                                           181  107  162    0
   38   Left-T1-planum-temporale                                        57  188  208    0
@@ -49,7 +49,7 @@
   48   Left-T3-posterior                                               62  192  238    0
   49   Left-Fusiform-gyrus                                            204   52  199    0
   50   Left-Occipito-temporal-sulcus                                  255  192   96    0
-  51   Left-Collateral-sulcus                                           0  128  255    0
+  51   Left-Collateral-sulcus                                          10  128  255    0
   52   Left-Lingual-sulcus                                             28   53   81    0
   53   Left-Parahippocampal-cortex                                    218  133   56    0
   54   Left-Rhinal-cortex                                              76  253  119    0
@@ -114,7 +114,7 @@
  113   Right-Posterior-cingulate-cortex-retrosplenial-gyrus           255   64  192    0
  114   Right-Insula-gyri-brevi                                        133  102  118    0
  115   Right-Insula-gyri-longi                                        241   31  145    0
- 116   Right-Temporal-pole                                            255  255   60    0
+ 116   Right-Temporal-pole                                            240  255   60    0
  117   Right-T1-planum-polare                                         179  187  156    0
  118   Right-Gyrus-of-Heschl                                          181  107  162    0
  119   Right-T1-planum-temporale                                       57  188  208    0
@@ -130,7 +130,7 @@
  129   Right-T3-posterior                                              62  192  238    0
  130   Right-Fusiform-gyrus                                           204   52  199    0
  131   Right-Occipito-temporal-sulcus                                 255  192   96    0
- 132   Right-Collateral-sulcus                                          0  128  255    0
+ 132   Right-Collateral-sulcus                                         10  128  255    0
  133   Right-Lingual-sulcus                                            28   53   81    0
  134   Right-Parahippocampal-cortex                                   218  133   56    0
  135   Right-Rhinal-cortex                                             76  253  119    0
