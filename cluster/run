@@ -41,7 +41,7 @@ run_one_path=$(cd $(dirname $0) && pwd)/run-one
 pipeline_dir=$(cd $(dirname $0)/.. && pwd)
 
 # Submit using SLURM
-submit_cmd="sbatch -p dev -N 1 -n 1 --exclude=n01 --mem=60G --exclusive --export=PIPELINE_DIR=${pipeline_dir},ALL"
+submit_cmd="sbatch -p all -N 1 -n 1 --exclude=n01 --mem=60G --exclusive --export=PIPELINE_DIR=${pipeline_dir},ALL"
 
 subjects_dir=${SUBJECTS_DIR:-$(pwd)/fs}
 
