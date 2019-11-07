@@ -1,30 +1,11 @@
+variables:
+  repo: gitlab.thevirtualbrain.org:5000
+  tag: tvb/pipeline
 
-stages:
-  - info
-  
-before_script:
-  - source /soft/miniconda3/activate
-
-info:
-  stage: info
+build:
+  stage: build
   script:
-    - pwd
-    - whoami
-    - which python
-    - which pip
-    - which make
-    - echo $PYTHONPATH
+    - docker build -f docker/Dockerfile -t $repo/$tag/$CI_COMMIT_REF_NAME .
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $repo
+    - docker push $repo/$tag/$CI_COMMIT_REF_NAME
 
-# only vep tag ensures access to patient data
-check_perm_vep:
-  stage: info
-  script:
-    - ls /home/vep/Pipeline/*
-  tags:
-    - vep
-
-# compute tag does not
-check_perm_compute:
-  stage: info
-  script:
-    - bash -c '[ ! $(ls /home/vep/Pipeline/* > /dev/null) ]'
