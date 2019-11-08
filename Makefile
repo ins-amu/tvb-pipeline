@@ -24,6 +24,7 @@ XLSX ?= $(DATA)/$(SUBJECT)/patient.xlsx
 
 # Only one of the following should be present
 ELEC_POS_GARDEL ?= $(DATA)/$(SUBJECT)/elec/pos_vox.txt
+ELEC_MM_GARDEL ?= $(DATA)/$(SUBJECT)/elec/pos_mm.txt
 ELEC_ENDPOINTS ?= $(DATA)/$(SUBJECT)/elec/elec_endpoints.txt
 ELEC_LABEL_SCHEMA ?= $(DATA)/$(SUBJECT)/elec/schema.txt
 # }}}

@@ -33,9 +33,16 @@ $(sd)/elec/labeled_elec-T1.nii.gz: $(sd)/elec/masked_elec-T1.nii.gz
 
 # wildcard syntax below tests if file exists
 ifneq ("$(wildcard $(ELEC_POS_GARDEL))", "")
-# Coordinates from GARDEL
+# Voxel coordinates from GARDEL
 $(sd)/elec/seeg.xyz: $(ELEC_POS_GARDEL) $(sd)/elec/elec-$(elec_mode)_in_T1.nii.gz
-	python -m util.util transform_gardel_coords_to_tvb $< \
+	python -m util.util transform_gardel_coords_to_tvb ijk $< \
+        $(sd)/elec/elec-$(elec_mode).nii.gz \
+		$(sd)/elec/elec-$(elec_mode)_in_T1.nii.gz \
+		$(sd)/elec/elec-$(elec_mode)_to_T1.mat $@
+else ifneq ("$(wildcard $(ELEC_MM_GARDEL))", "")
+# MM coordinates from GARDEL
+$(sd)/elec/seeg.xyz: $(ELEC_MM_GARDEL) $(sd)/elec/elec-$(elec_mode)_in_T1.nii.gz
+	python -m util.util transform_gardel_coords_to_tvb mm $< \
         $(sd)/elec/elec-$(elec_mode).nii.gz \
 		$(sd)/elec/elec-$(elec_mode)_in_T1.nii.gz \
 		$(sd)/elec/elec-$(elec_mode)_to_T1.mat $@

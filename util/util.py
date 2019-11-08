@@ -228,7 +228,8 @@ def gen_seeg_xyz_from_endpoints(scheme_fname, out_fname, transform_mat=None,
     outfile.close()
 
 
-def transform_gardel_coords_to_tvb(gardel_file, src_img_file, target_img_file, transform_mat, tvb_coords_file):
+def transform_gardel_coords_to_tvb(units, gardel_file, src_img_file, target_img_file, transform_mat, tvb_coords_file):
+    assert units == 'mm' or units == 'ijk'
     orig_coords = np.genfromtxt(gardel_file, names=True,
                                 dtype=None,
                                 usecols=(0, 1, 2, 3, 4))
@@ -248,7 +249,10 @@ def transform_gardel_coords_to_tvb(gardel_file, src_img_file, target_img_file, t
     target_coords = np.zeros((nsensors, 3))
     for i in range(nsensors):
         vox_src = [orig_coords[i]['x'], orig_coords[i]['y'], orig_coords[i]['z']]
-        ras_src = np.dot(src_img.affine, vox_src + [1])[0:3]
+        if units == 'ijk':
+            ras_src = np.dot(src_img.affine, vox_src + [1])[0:3]
+        else:
+            ras_src = vox_src
         target_coords[i, :] = transform(ras_src, src_img_file, target_img_file, transform_mat)
 
     with open(tvb_coords_file, 'w') as fl:
