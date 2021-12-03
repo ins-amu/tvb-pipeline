@@ -1,5 +1,8 @@
 # Diffusion processing
 
+# set this to -number for old mrtrix3
+number_flag = -select
+
 dwi_log := >> $(sd)/dwi/log.txt 2>&1
 
 # 001.mgz: wait for subject folder to exist before proceeding
@@ -64,11 +67,11 @@ $(sd)/dwi/all.tck: $(sd)/dwi/fod.mif $(sd)/dwi/mask.mif
 	tckgen $< $@ \
 	    -mask $(sd)/dwi/mask.mif \
 	    -seed_image $(sd)/dwi/mask.mif \
-	    -number $(ntrack) -force -nthreads $(nthread) $(dwi_log)
+	    $(number_flag) $(ntrack) -force -nthreads $(nthread) $(dwi_log)
 
 # subsample tracks
 $(sd)/dwi/100k.tck: $(sd)/dwi/all.tck
-	tckedit -number 100K $< $@ $(dwi_log)
+	tckedit $(number_flag) 100K $< $@ $(dwi_log)
 
 # generate track counts for connectome
 $(sd)/dwi/triu_counts.%.txt: $(sd)/dwi/all.tck $(sd)/dwi/label.%.mif
