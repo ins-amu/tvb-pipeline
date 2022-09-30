@@ -5,7 +5,7 @@ variables:
 build:
   stage: build
   script:
-    - docker build -f docker/Dockerfile -t $repo/$tag/$CI_COMMIT_REF_NAME .
+    - docker build -t $repo/$tag:$CI_COMMIT_REF_NAME .
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $repo
     - docker push $repo/$tag/$CI_COMMIT_REF_NAME
 
