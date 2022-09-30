@@ -5,7 +5,7 @@ variables:
 build:
   stage: build
   tags:
-    - shell-runner
+    - hipwork
   script:
     - docker build -t $repo/$tag:$CI_COMMIT_REF_NAME .
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $repo
